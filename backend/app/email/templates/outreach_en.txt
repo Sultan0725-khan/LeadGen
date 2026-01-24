@@ -1,0 +1,19 @@
+# Email Template (English)
+
+**Subject:** Exclusive Opportunity for {{business_name}}
+
+---
+
+Hello {{business_name}} team,
+
+We discovered your business in {{location}} and were impressed by your {{category}} offerings!
+
+We'd like to introduce you to a unique opportunity to make your {{category}} services even more successful.
+
+Do you have a few minutes for a quick conversation?
+
+Best regards,
+{{from_name}}
+
+---
+To unsubscribe from future emails, simply reply with "UNSUBSCRIBE" or contact us at {{from_email}}.

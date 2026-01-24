@@ -1,0 +1,19 @@
+# Email Template (German)
+
+**Betreff:** Exklusive Chance für {{business_name}}
+
+---
+
+Hallo {{business_name}} Team,
+
+wir haben Ihr Unternehmen in {{location}} entdeckt und waren beeindruckt von Ihrem {{category}}-Angebot!
+
+Wir möchten Ihnen eine einzigartige Möglichkeit vorstellen, Ihre {{category}}-Dienstleistungen noch erfolgreicher zu machen.
+
+Haben Sie ein paar Minuten für ein kurzes Gespräch?
+
+Mit freundlichen Grüßen,
+{{from_name}}
+
+---
+Um sich von zukünftigen E-Mails abzumelden, antworten Sie einfach mit "ABMELDEN" oder kontaktieren  Sie uns unter {{from_email}}.

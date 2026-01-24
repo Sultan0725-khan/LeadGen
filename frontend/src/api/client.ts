@@ -1,0 +1,103 @@
+const API_BASE_URL = "http://localhost:8000/api";
+
+export interface Run {
+  id: string;
+  status: string;
+  location: string;
+  category: string;
+  require_approval: boolean;
+  dry_run: boolean;
+  total_leads: number;
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+}
+
+export interface Lead {
+  id: string;
+  run_id: string;
+  business_name: string;
+  address?: string;
+  website?: string;
+  email?: string;
+  phone?: string;
+  latitude?: number;
+  longitude?: number;
+  confidence_score: number;
+  sources: string[];
+  enrichment_data: any;
+  created_at: string;
+  email_status?: string;
+}
+
+export interface CreateRunRequest {
+  location: string;
+  category: string;
+  require_approval: boolean;
+  dry_run: boolean;
+}
+
+export const api = {
+  // Runs
+  async createRun(data: CreateRunRequest): Promise<Run> {
+    const response = await fetch(`${API_BASE_URL}/runs/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error("Failed to create run");
+    return response.json();
+  },
+
+  async getRuns(): Promise<Run[]> {
+    const response = await fetch(`${API_BASE_URL}/runs/`);
+    if (!response.ok) throw new Error("Failed to fetch runs");
+    return response.json();
+  },
+
+  async getRun(runId: string): Promise<Run> {
+    const response = await fetch(`${API_BASE_URL}/runs/${runId}`);
+    if (!response.ok) throw new Error("Failed to fetch run");
+    return response.json();
+  },
+
+  // Leads
+  async getLeads(
+    runId: string,
+    page = 1,
+    per_page = 50,
+  ): Promise<{ leads: Lead[]; total: number }> {
+    const response = await fetch(
+      `${API_BASE_URL}/leads/run/${runId}?page=${page}&per_page=${per_page}`,
+    );
+    if (!response.ok) throw new Error("Failed to fetch leads");
+    return response.json();
+  },
+
+  // Emails
+  async approveEmail(emailId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/emails/${emailId}/approve`, {
+      method: "POST",
+    });
+    if (!response.ok) throw new Error("Failed to approve email");
+  },
+
+  async suppressEmail(emailId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/emails/${emailId}/suppress`, {
+      method: "POST",
+    });
+    if (!response.ok) throw new Error("Failed to suppress email");
+  },
+
+  // Export
+  exportCSV(runId: string): string {
+    return `${API_BASE_URL}/export/run/${runId}/csv`;
+  },
+
+  async getLogs(runId: string): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/export/run/${runId}/logs`);
+    if (!response.ok) throw new Error("Failed to fetch logs");
+    return response.json();
+  },
+};
