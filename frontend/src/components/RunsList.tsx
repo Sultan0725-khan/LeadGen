@@ -27,6 +27,25 @@ export function RunsList({ refreshTrigger, onSelectRun }: RunsListProps) {
     }
   };
 
+  const handleDelete = async (runId: string, location: string) => {
+    if (
+      !confirm(
+        `Delete run "${location}"? This will permanently delete all leads, emails, and logs.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await api.deleteRun(runId);
+      // Refresh runs list
+      setRuns(runs.filter((r) => r.id !== runId));
+    } catch (err) {
+      console.error("Failed to delete run:", err);
+      alert("Failed to delete run. Please try again.");
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const classMap: Record<string, string> = {
       queued: "badge-info",
@@ -87,6 +106,14 @@ export function RunsList({ refreshTrigger, onSelectRun }: RunsListProps) {
                     disabled={run.status !== "completed"}
                   >
                     View Leads
+                  </button>
+                  <button
+                    className="btn btn-small btn-danger"
+                    onClick={() => handleDelete(run.id, run.location)}
+                    style={{ marginLeft: "8px" }}
+                    title="Delete this run and all associated data"
+                  >
+                    🗑️
                   </button>
                 </td>
               </tr>

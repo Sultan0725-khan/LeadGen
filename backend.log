@@ -1,0 +1,136 @@
+INFO:     Will watch for changes in these directories: ['/Users/sultankhan/DevOps/LeadGen/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [41094] using WatchFiles
+INFO:     Started server process [41158]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+Initializing database...
+Starting job queue worker...
+Starting background job queue worker...
+Worker thread started, beginning to process jobs...
+Background worker thread started
+LeadGen API is ready!
+INFO:     127.0.0.1:61606 - "GET /api/runs/ HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/engine/default.py", line 922, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such column: runs.selected_providers
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/uvicorn/protocols/http/httptools_impl.py", line 419, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/uvicorn/middleware/proxy_headers.py", line 84, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/middleware/cors.py", line 83, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/routing.py", line 762, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/routing.py", line 782, in app
+    await route.handle(scope, receive, send)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/fastapi/routing.py", line 299, in app
+    raise e
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/fastapi/routing.py", line 294, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/fastapi/routing.py", line 193, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/starlette/concurrency.py", line 40, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/DevOps/LeadGen/backend/app/api/runs.py", line 55, in list_runs
+    runs = db.query(Run).order_by(Run.created_at.desc()).all()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/orm/query.py", line 2693, in all
+    return self._iter().all()  # type: ignore
+           ^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/orm/query.py", line 2847, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/orm/session.py", line 2308, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/orm/session.py", line 2190, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/orm/context.py", line 293, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/sql/elements.py", line 517, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/engine/base.py", line 1639, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/engine/base.py", line 2344, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/sultankhan/Library/Python/3.11/lib/python/site-packages/sqlalchemy/engine/default.py", line 922, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: runs.selected_providers
+[SQL: SELECT runs.id AS runs_id, runs.status AS runs_status, runs.location AS runs_location, runs.category AS runs_category, runs.require_approval AS runs_require_approval, runs.dry_run AS runs_dry_run, runs.total_leads AS runs_total_leads, runs.selected_providers AS runs_selected_providers, runs.provider_limits AS runs_provider_limits, runs.total_emails AS runs_total_emails, runs.total_websites AS runs_total_websites, runs.error_message AS runs_error_message, runs.created_at AS runs_created_at, runs.updated_at AS runs_updated_at, runs.completed_at AS runs_completed_at 
+FROM runs ORDER BY runs.created_at DESC]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+INFO:     127.0.0.1:62923 - "GET /api/providers/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62922 - "GET /api/stats/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64671 - "GET /api/stats/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50077 - "GET /api/providers/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50076 - "GET /api/stats/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51818 - "GET /api/stats/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53575 - "GET /api/providers/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53574 - "GET /api/stats/dashboard HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [41158]
+INFO:     Stopping reloader process [41094]

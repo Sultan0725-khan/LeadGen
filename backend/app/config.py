@@ -8,8 +8,15 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite:///./leadgen.db"
 
-    # OpenAI
-    openai_api_key: str
+    # LLM Configuration
+    llm_mode: str = "ollama"  # Options: "openai", "ollama"
+
+    # OpenAI (only required if llm_mode="openai")
+    openai_api_key: Optional[str] = None
+
+    # Ollama Configuration
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama2"
 
     # Google Places API
     google_places_api_key: Optional[str] = None

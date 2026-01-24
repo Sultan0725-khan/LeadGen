@@ -8,6 +8,10 @@ export interface Run {
   require_approval: boolean;
   dry_run: boolean;
   total_leads: number;
+  total_emails?: number;
+  total_websites?: number;
+  selected_providers?: string[];
+  provider_limits?: Record<string, number>;
   error_message?: string;
   created_at: string;
   updated_at: string;
@@ -31,11 +35,39 @@ export interface Lead {
   email_status?: string;
 }
 
+export interface Provider {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  requires_api_key: boolean;
+  free_tier: boolean;
+  daily_limit: string;
+  quota_limit: number;
+  quota_used: number;
+  quota_period: string;
+  quota_available: number;
+  query_limit: number;
+  statistics_url?: string;
+}
+
 export interface CreateRunRequest {
   location: string;
   category: string;
   require_approval: boolean;
   dry_run: boolean;
+  providers?: string[]; // Optional list of provider IDs
+  provider_limits?: Record<string, number>; // Dict of provider_id -> query limit
+}
+
+export interface DashboardStats {
+  total_leads: number;
+  total_emails: number;
+  total_websites: number;
+  total_runs: number;
+  recent_runs: number;
+  email_coverage: number;
+  website_coverage: number;
 }
 
 export const api = {
@@ -60,6 +92,13 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}/runs/${runId}`);
     if (!response.ok) throw new Error("Failed to fetch run");
     return response.json();
+  },
+
+  async deleteRun(runId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/runs/${runId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error("Failed to delete run");
   },
 
   // Leads
@@ -98,6 +137,39 @@ export const api = {
   async getLogs(runId: string): Promise<any[]> {
     const response = await fetch(`${API_BASE_URL}/export/run/${runId}/logs`);
     if (!response.ok) throw new Error("Failed to fetch logs");
+    return response.json();
+  },
+
+  // Providers
+  async getProviders(): Promise<Provider[]> {
+    const response = await fetch(`${API_BASE_URL}/providers/`);
+    if (!response.ok) throw new Error("Failed to fetch providers");
+    return response.json();
+  },
+
+  // Statistics
+  async getDashboardStats(): Promise<DashboardStats> {
+    const response = await fetch(`${API_BASE_URL}/stats/dashboard`);
+    if (!response.ok) throw new Error("Failed to fetch dashboard stats");
+    return response.json();
+  },
+
+  async getProviderStats(providerId: string): Promise<any> {
+    const response = await fetch(
+      `${API_BASE_URL}/stats/providers/${providerId}`,
+    );
+    if (!response.ok) throw new Error("Failed to fetch provider stats");
+    return response.json();
+  },
+
+  async refreshProviderStats(providerId: string): Promise<any> {
+    const response = await fetch(
+      `${API_BASE_URL}/stats/providers/${providerId}/refresh`,
+      {
+        method: "POST",
+      },
+    );
+    if (!response.ok) throw new Error("Failed to refresh provider stats");
     return response.json();
   },
 };

@@ -1,0 +1,88 @@
+# Provider Configuration
+# This file controls which lead providers are available and their settings
+
+providers:
+  openstreetmap:
+    enabled: true
+    name: "OpenStreetMap (Overpass)"
+    description: "Free and open geodata - no API key needed"
+    requires_api_key: false
+    free_tier: true
+    daily_limit: "Unlimited (rate limited to ~2 req/sec)"
+    quota_limit: 0 # 0 means unlimited
+    quota_period: "daily"
+    query_limit: 100 # Default WHERE limit
+
+  google_places:
+    enabled: false
+    name: "Google Places API"
+    description: "Google's business data"
+    requires_api_key: true
+    api_key: "" # Add your key here
+    free_tier: false
+    daily_limit: "Pay per use"
+    quota_limit: 0
+    quota_period: "daily"
+    query_limit: 50
+
+  geoaepify:
+    enabled: true
+    name: "Geoapify Places"
+    description: "OSM-based POI data"
+    requires_api_key: true
+    api_key: "cd0ca40d6c43488d9df9aad05f5624e3" # Add your key here
+    free_tier: true
+    daily_limit: "3,000 requests/day"
+    quota_limit: 3000
+    quota_period: "daily"
+    query_limit: 100
+    statistics_url: "https://myprojects.geoapify.com/api/33brBp2TrQEjKqDbPLTR/statistics"
+
+  tomtom:
+    enabled: true
+    name: "TomTom Search API"
+    description: "Global POI search"
+    requires_api_key: true
+    api_key: "xrbrR1swSsYu3DLY5711raeU1vpFi8w8" # Add your key here
+    free_tier: true
+    daily_limit: "2,500 requests/day"
+    quota_limit: 2500
+    quota_period: "daily"
+    query_limit: 100
+
+  mapquest:
+    enabled: false
+    name: "MapQuest Search"
+    description: "POI and location search"
+    requires_api_key: true
+    api_key: "" # Add your key here
+    free_tier: true
+    daily_limit: "15,000 requests/month"
+    quota_limit: 15000
+    quota_period: "monthly"
+    query_limit: 100
+
+  yelp:
+    enabled: false
+    name: "Yelp Fusion API"
+    description: "Business data with reviews"
+    requires_api_key: true
+    api_key: "" # Add your key here
+    free_tier: true
+    daily_limit: "5,000 requests/day"
+    quota_limit: 5000
+    quota_period: "daily"
+    query_limit: 100
+
+# Default providers to use if none specified in run
+default_providers:
+  - openstreetmap
+
+# Global settings
+settings:
+  # Maximum number of providers to query in parallel
+  max_parallel_providers: 5
+
+  # Retry failed providers
+  retry_on_failure: true
+  max_retries: 2

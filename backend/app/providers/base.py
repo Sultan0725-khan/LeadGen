@@ -21,6 +21,12 @@ class BaseProvider(ABC):
 
     @property
     @abstractmethod
+    def id(self) -> str:
+        """Unique provider ID (matches config)."""
+        pass
+
+    @property
+    @abstractmethod
     def name(self) -> str:
         """Provider name for tracking provenance."""
         pass

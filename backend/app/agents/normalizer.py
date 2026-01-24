@@ -70,9 +70,9 @@ class Normalizer:
 
         # If names are somewhat similar, check address or coordinates
         if name_similarity >= 0.7:
-            # Check address similarity
-            addr1 = lead1.get("address", "").lower()
-            addr2 = lead2.get("address", "").lower()
+            # Check address similarity (handle None explicitly)
+            addr1 = (lead1.get("address") or "").lower()
+            addr2 = (lead2.get("address") or "").lower()
 
             if addr1 and addr2:
                 addr_similarity = SequenceMatcher(None, addr1, addr2).ratio()

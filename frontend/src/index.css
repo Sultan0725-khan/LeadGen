@@ -145,6 +145,21 @@ body {
   color: white;
 }
 
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.btn-danger:hover {
+  box-shadow:
+    var(--shadow-md),
+    0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
 /* Input Fields */
 .input {
   background: var(--bg-secondary);

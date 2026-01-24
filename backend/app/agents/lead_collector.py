@@ -7,23 +7,39 @@ import asyncio
 class LeadCollector:
     """Tool to collect leads from all available providers."""
 
-    async def collect(self, location: str, category: str) -> List[Dict]:
+    async def collect(
+        self,
+        location: str,
+        category: str,
+        selected_providers: List[str] = None,
+        provider_limits: Dict[str, int] = None
+    ) -> List[Dict]:
         """
         Collect leads from all available providers in parallel.
 
         Returns list of raw leads with provider provenance.
         """
-        providers = ProviderRegistry.get_available_providers()
+        print(f"[LeadCollector] Starting collection for location='{location}', category='{category}'")
+        providers = ProviderRegistry.get_available_providers(selected_providers)
+
+        print(f"[LeadCollector] ProviderRegistry returned {len(providers) if providers else 0} providers")
+        if providers:
+            print(f"[LeadCollector] Provider names: {[p.name for p in providers]}")
 
         if not providers:
-            print("No providers available")
+            print("[LeadCollector] ERROR: No providers available!")
             return []
 
         print(f"Collecting leads from {len(providers)} providers: {[p.name for p in providers]}")
 
         # Run all providers in parallel
         tasks = [
-            self._collect_from_provider(provider, location, category)
+            self._collect_from_provider(
+                provider,
+                location,
+                category,
+                limit=provider_limits.get(provider.id) if provider_limits else None
+            )
             for provider in providers
         ]
 
@@ -36,7 +52,12 @@ class LeadCollector:
                 print(f"Error from {provider.name}: {result}")
                 continue
 
-            for raw_lead in result:
+            limit = provider_limits.get(provider.id) if provider_limits else None
+            leads_from_provider = result
+            if limit and len(leads_from_provider) > limit:
+                leads_from_provider = leads_from_provider[:limit]
+
+            for raw_lead in leads_from_provider:
                 lead_dict = {
                     "business_name": raw_lead.business_name,
                     "address": raw_lead.address,
@@ -53,12 +74,19 @@ class LeadCollector:
         print(f"Collected {len(all_leads)} total leads")
         return all_leads
 
-    async def _collect_from_provider(self, provider, location: str, category: str) -> List[RawLead]:
+    async def _collect_from_provider(self, provider, location: str, category: str, limit: int = None) -> List[RawLead]:
         """Collect from a single provider with error handling."""
+        print(f"[LeadCollector] Calling {provider.name}.search(location='{location}', category='{category}', limit={limit})")
         try:
-            leads = await provider.search(location, category)
+            kwargs = {}
+            if limit:
+                kwargs["limit"] = limit
+
+            leads = await provider.search(location, category, **kwargs)
             print(f"{provider.name}: found {len(leads)} leads")
             return leads
         except Exception as e:
-            print(f"{provider.name}: error - {e}")
+            print(f"{provider.name}: ERROR - {e}")
+            import traceback
+            traceback.print_exc()
             return []

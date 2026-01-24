@@ -38,7 +38,12 @@ class AgentOrchestrator:
 
             # Step 1: Collect leads from providers
             self._log(run, LogLevel.INFO, f"Collecting leads for {run.category} in {run.location}")
-            raw_leads = await self.lead_collector.collect(run.location, run.category)
+            raw_leads = await self.lead_collector.collect(
+                run.location,
+                run.category,
+                selected_providers=run.selected_providers,
+                provider_limits=run.provider_limits
+            )
             self._log(run, LogLevel.INFO, f"Collected {len(raw_leads)} raw leads")
 
             # Step 2: Normalize and deduplicate

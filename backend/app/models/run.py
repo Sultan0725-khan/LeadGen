@@ -24,6 +24,14 @@ class Run(Base):
     require_approval = Column(Integer, default=0)  # SQLite boolean
     dry_run = Column(Integer, default=0)  # SQLite boolean
     total_leads = Column(Integer, default=0)
+
+    # Provider selection and limits
+    selected_providers = Column(JSON, default=list)  # List of provider IDs used
+    provider_limits = Column(JSON, default=dict)  # Dict of provider_id -> query limit
+
+    # Enrichment statistics
+    total_emails = Column(Integer, default=0)  # Count of leads with email
+    total_websites = Column(Integer, default=0)  # Count of leads with website
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

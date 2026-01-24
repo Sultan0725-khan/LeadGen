@@ -1,6 +1,7 @@
-from typing import Dict
+from typing import Dict, Optional
 from app.config import settings
 from openai import AsyncOpenAI
+import httpx
 import re
 
 
@@ -8,7 +9,17 @@ class EmailWriter:
     """Tool to generate personalized outreach emails using LLM."""
 
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
+        self.llm_mode = settings.llm_mode.lower()
+
+        if self.llm_mode == "openai":
+            if not settings.openai_api_key:
+                raise ValueError("OpenAI API key required when llm_mode='openai'")
+            self.client = AsyncOpenAI(api_key=settings.openai_api_key)
+        elif self.llm_mode == "ollama":
+            self.ollama_url = settings.ollama_base_url
+            self.ollama_model = settings.ollama_model
+        else:
+            raise ValueError(f"Invalid llm_mode: {self.llm_mode}. Must be 'openai' or 'ollama'")
 
     async def generate_email(
         self,
@@ -22,33 +33,18 @@ class EmailWriter:
 
         Returns dict with 'subject' and 'body' keys.
         """
-        business_name = lead.get("business_name", "")
-
         # Build context for LLM
         context = self._build_context(lead, run_location, run_category)
-
-        # Generate email with OpenAI
         prompt = self._build_prompt(context, language)
 
         try:
-            response = await self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert email copywriter specializing in B2B outreach for local businesses. "
-                                   "Write professional, friendly, and personalized emails that feel authentic and respectful."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                temperature=0.7,
-                max_tokens=500
-            )
-
-            email_text = response.choices[0].message.content.strip()
+            # Route to appropriate LLM provider
+            if self.llm_mode == "openai":
+                email_text = await self._generate_with_openai(prompt)
+            elif self.llm_mode == "ollama":
+                email_text = await self._generate_with_ollama(prompt)
+            else:
+                raise ValueError(f"Unknown LLM mode: {self.llm_mode}")
 
             # Parse subject and body
             subject, body = self._parse_email(email_text, language)
@@ -62,9 +58,51 @@ class EmailWriter:
             }
 
         except Exception as e:
+            business_name = lead.get("business_name", "")
             print(f"Error generating email for {business_name}: {e}")
             # Fallback to template
             return self._generate_fallback_email(lead, run_location, run_category, language)
+
+    async def _generate_with_openai(self, prompt: str) -> str:
+        """Generate email using OpenAI API."""
+        response = await self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert email copywriter specializing in B2B outreach for local businesses. "
+                               "Write professional, friendly, and personalized emails that feel authentic and respectful."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
+        return response.choices[0].message.content.strip()
+
+    async def _generate_with_ollama(self, prompt: str) -> str:
+        """Generate email using Ollama local LLM."""
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                f"{self.ollama_url}/api/generate",
+                json={
+                    "model": self.ollama_model,
+                    "prompt": f"""You are an expert email copywriter specializing in B2B outreach for local businesses. Write professional, friendly, and personalized emails that feel authentic and respectful.
+
+{prompt}""",
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.7,
+                        "num_predict": 500
+                    }
+                }
+            )
+            response.raise_for_status()
+            result = response.json()
+            return result.get("response", "").strip()
 
     def _build_context(self, lead: Dict, location: str, category: str) -> Dict:
         """Build context dict for email generation."""

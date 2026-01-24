@@ -12,6 +12,10 @@ class GooglePlacesProvider(BaseProvider):
     PLACES_DETAILS_URL = "https://maps.googleapis.com/maps/api/place/details/json"
 
     @property
+    def id(self) -> str:
+        return "google_places"
+
+    @property
     def name(self) -> str:
         return "GooglePlaces"
 
@@ -21,6 +25,7 @@ class GooglePlacesProvider(BaseProvider):
 
     async def search(self, location: str, category: str, **kwargs) -> List[RawLead]:
         """Search Google Places for businesses."""
+        limit = kwargs.get("limit", 60)
         if not self.is_available():
             print("Google Places API key not configured")
             return []
@@ -56,6 +61,8 @@ class GooglePlacesProvider(BaseProvider):
                     lead = self._parse_place(place)
                     if lead:
                         leads.append(lead)
+                        if len(leads) >= limit:
+                            return leads[:limit]
 
                 # Check for next page
                 next_page_token = data.get("next_page_token")

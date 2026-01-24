@@ -1,0 +1,80 @@
+													LeadGen
+
+
+Prompt 1
+
+- LLM Model Offline on-prem statt OpenAI Api Calls 
+
+- alte runs sollen gelöscht werden können via Button im UI 
+
+- Lead generation vomn verschieden Provider
+
+- im UI unter Select Data Source sollen die Provider stehen mit einer checkbox zum auswählen (OpenStreetMap, GeoAPIfy etc.) mit dem free kontigent counter wieviele noch ausgeführt werden können
+
+- ordne die provider auf kartenin einem 2-comun grid zwei karten neben einander 
+
+- gib noch eine WHERE Limit pro Query beim Provider anzahl box wieviele Records abgefragt werden sollen beim provider
+
+- statistics zeigen im UI wenn API ein Kontigent pro Tag oder Monat hat z.B. https://myprojects.geoapify.com/api/33brBp2TrQEjKqDbPLTR/statistics
+
+- Calls verhindern wenn Kontigent erreicht ist und auswahl checkbox ausblenden mit message (Free Limit Erreicht)
+
+- Wo werden die Runs gespeichert?
+
+- gib mir zwei splaten für die gesamtanzahl der gefundenn (nicht null oder "") an Email-Adressen und Websiten in dem dashboard 
+
+- ordne die Data Source als karten an, achte darauf dass zwei Karten nebeneinander stehen (im grid mit 2 columns)
+
+---------------------------------------------------------------------------------------------------------------------
+
+*** Services neu starten ***
+
+cd /Users/sultankhan/DevOps/LeadGen
+
+source venv/bin/activate
+
+uvicorn app.main:app --reload
+
+
+### Frontend neu starten 
+
+cd /Users/sultankhan/DevOps/LeadGen/frontend
+npm run dev
+
+ 
+## Bei Problem Environment 
+
+pip install -r requirements.txt
+
+
+## Falls Port belegt ist 
+
+lsof -ti:8000 | xargs kill -9
+
+
++++ Starte Port Front End +++ 
+
+➜  backend git:(master) ✗ cd /Users/sultankhan/DevOps/LeadGen/frontend
+
+➜  frontend git:(master) ✗ npm run dev 
+
+
+
+--------------------------------------------
+
+Provider 
+
+
+Geoapify Places
+	Email: paravanto 
+	API Key: cd0ca40d6c43488d9df9aad05f5624e3
+
+
+TomTom 
+	Email: paravanto 
+	Password: LetsgoLeadGen26
+	Name: LeadGenB2B 
+	API Key: xrbrR1swSsYu3DLY5711raeU1vpFi8w8
+
+
+

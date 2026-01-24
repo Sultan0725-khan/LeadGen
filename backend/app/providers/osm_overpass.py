@@ -7,7 +7,12 @@ import asyncio
 class OSMOverpassProvider(BaseProvider):
     """OpenStreetMap Overpass API provider."""
 
-    OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+    # Multiple Overpass servers for redundancy
+    OVERPASS_SERVERS = [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+        "https://overpass.openstreetmap.ru/api/interpreter",
+    ]
 
     # OSM tag mappings for common categories
     CATEGORY_TAGS = {
@@ -22,30 +27,43 @@ class OSMOverpassProvider(BaseProvider):
     }
 
     @property
+    def id(self) -> str:
+        return "openstreetmap"
+
+    @property
     def name(self) -> str:
         return "OpenStreetMap"
 
     async def search(self, location: str, category: str, **kwargs) -> List[RawLead]:
         """Search OSM for businesses via Overpass API."""
+        limit = kwargs.get("limit", 100)
 
         # Build Overpass query
         tag_filter = self._get_tag_filter(category)
-        query = self._build_query(location, tag_filter)
+        query = self._build_query(location, tag_filter, limit=limit)
 
         # Execute query with rate limiting
         await self._rate_limit()
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            try:
-                response = await client.post(
-                    self.OVERPASS_URL,
-                    data={"data": query}
-                )
-                response.raise_for_status()
-                data = response.json()
-            except Exception as e:
-                print(f"OSM Overpass error: {e}")
-                return []
+        # Try each server until one works
+        for server_url in self.OVERPASS_SERVERS:
+            async with httpx.AsyncClient(timeout=60.0) as client:  # Increased timeout
+                try:
+                    response = await client.post(
+                        server_url,
+                        data={"data": query}
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    print(f"OSM Overpass: Successfully used server {server_url}")
+                    break  # Success, exit loop
+                except Exception as e:
+                    print(f"OSM Overpass: {server_url} failed - {e}")
+                    if server_url == self.OVERPASS_SERVERS[-1]:  # Last server
+                        print("OSM Overpass: All servers failed")
+                        return []
+                    # Try next server
+                    continue
 
         # Parse results
         leads = []
@@ -67,7 +85,7 @@ class OSMOverpassProvider(BaseProvider):
         # Fallback: search in name or cuisine
         return f"amenity~'restaurant|cafe|bar|fast_food'"
 
-    def _build_query(self, location: str, tag_filter: str) -> str:
+    def _build_query(self, location: str, tag_filter: str, limit: int = 100) -> str:
         """Build Overpass QL query."""
         # Try to geocode location to get bounding box
         # For simplicity, use a search area by name
@@ -79,7 +97,7 @@ class OSMOverpassProvider(BaseProvider):
           way[{tag_filter}](area.searchArea);
           relation[{tag_filter}](area.searchArea);
         );
-        out body;
+        out {limit};
         >;
         out skel qt;
         """

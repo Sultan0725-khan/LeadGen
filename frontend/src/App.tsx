@@ -2,6 +2,7 @@ import { useState } from "react";
 import { RunForm } from "./components/RunForm";
 import { RunsList } from "./components/RunsList";
 import { LeadsTable } from "./components/LeadsTable";
+import { DashboardStatsComponent } from "./components/DashboardStats";
 import "./App.css";
 
 function App() {
@@ -30,6 +31,8 @@ function App() {
           <h1 className="text-gradient">LeadGen Pipeline</h1>
           <p>Agentic lead generation & enrichment with intelligent outreach</p>
         </header>
+
+        <DashboardStatsComponent />
 
         <div className="main-content">
           {!selectedRunId ? (
