@@ -32,7 +32,7 @@ function App() {
           <p>Agentic lead generation & enrichment with intelligent outreach</p>
         </header>
 
-        <DashboardStatsComponent />
+        {!selectedRunId && <DashboardStatsComponent />}
 
         <div className="main-content">
           {!selectedRunId ? (

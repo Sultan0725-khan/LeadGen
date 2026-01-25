@@ -8,16 +8,28 @@ class ProviderConfig:
 
     def __init__(self, config_path: str = "providers_config.yaml"):
         self.config_path = Path(config_path)
-        self._config = self._load_config()
+        self._last_loaded = None
+        self._config = {}
+        self._load_if_needed()
+
+    def _load_if_needed(self):
+        """Reload configuration if file has changed."""
+        if not self.config_path.exists():
+            if not self._config:
+                self._config = self._get_default_config()
+            return
+
+        mtime = self.config_path.stat().st_mtime
+        if self._last_loaded is None or mtime > self._last_loaded:
+            print(f"Loading/Reloading configuration from {self.config_path}")
+            with open(self.config_path, 'r') as f:
+                self._config = yaml.safe_load(f)
+            self._last_loaded = mtime
 
     def _load_config(self) -> dict:
-        """Load configuration from YAML file."""
-        if not self.config_path.exists():
-            print(f"Warning: {self.config_path} not found, using defaults")
-            return self._get_default_config()
-
-        with open(self.config_path, 'r') as f:
-            return yaml.safe_load(f)
+        """Deprecated: use _load_if_needed"""
+        self._load_if_needed()
+        return self._config
 
     def _get_default_config(self) -> dict:
         """Return default configuration."""
@@ -39,6 +51,7 @@ class ProviderConfig:
 
     def get_enabled_providers(self) -> List[str]:
         """Get list of enabled provider IDs."""
+        self._load_if_needed()
         providers = self._config.get("providers", {})
         return [
             provider_id
@@ -48,6 +61,7 @@ class ProviderConfig:
 
     def get_provider_config(self, provider_id: str) -> Optional[Dict]:
         """Get configuration for a specific provider."""
+        self._load_if_needed()
         return self._config.get("providers", {}).get(provider_id)
 
     def is_provider_enabled(self, provider_id: str) -> bool:
@@ -70,6 +84,7 @@ class ProviderConfig:
         Args:
             usage_data: Optional dict of provider_id -> current usage count
         """
+        self._load_if_needed()
         providers_info = []
         for provider_id, config in self._config.get("providers", {}).items():
             quota_limit = config.get("quota_limit", 0)
@@ -95,10 +110,12 @@ class ProviderConfig:
 
     def get_default_providers(self) -> List[str]:
         """Get default provider IDs to use."""
+        self._load_if_needed()
         return self._config.get("default_providers", ["openstreetmap"])
 
     def get_settings(self) -> Dict:
         """Get global settings."""
+        self._load_if_needed()
         return self._config.get("settings", {})
 
 

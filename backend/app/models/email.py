@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from app.utils.timezone import get_german_now
 import uuid
 import enum
 from app.database import Base
@@ -27,7 +28,7 @@ class Email(Base):
     body = Column(Text, nullable=False)
     language = Column(String, default="DE")
 
-    generated_at = Column(DateTime, default=datetime.utcnow)
+    generated_at = Column(DateTime, default=get_german_now)
     sent_at = Column(DateTime, nullable=True)
     error_message = Column(Text, nullable=True)
 
@@ -41,4 +42,4 @@ class OptOut(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, unique=True, nullable=False, index=True)
-    optout_at = Column(DateTime, default=datetime.utcnow)
+    optout_at = Column(DateTime, default=get_german_now)

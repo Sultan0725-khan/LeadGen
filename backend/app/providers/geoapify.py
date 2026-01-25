@@ -11,7 +11,7 @@ class GeoapifyProvider(BaseProvider):
 
     @property
     def id(self) -> str:
-        return "geoaepify"  # Note: matches typo in config
+        return "geoapify"
 
     @property
     def name(self) -> str:
@@ -145,6 +145,17 @@ class GeoapifyProvider(BaseProvider):
                 "categories": properties.get("categories"),
             }
         )
+
+    def calculate_credits(self, **kwargs) -> int:
+        """
+        Geoapify credits calculation:
+        - Geocoding API: 1 credit
+        - Places API: 1 credit per 20 places
+        """
+        limit = kwargs.get("limit", 1)
+        import math
+        places_credits = math.ceil(limit / 20)
+        return 1 + places_credits  # 1 for geocoding + places credits
 
     def get_rate_limit(self) -> tuple[int, int]:
         """Geoapify rate limit: 3000 requests per day, ~2 per second."""

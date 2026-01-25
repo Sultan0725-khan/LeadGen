@@ -21,12 +21,14 @@ class GooglePlacesProvider(BaseProvider):
 
     def is_available(self) -> bool:
         """Check if Google Places API key is configured."""
-        return settings.google_places_api_key is not None
+        api_key = provider_config.get_api_key("google_places") or settings.google_places_api_key
+        return api_key is not None and provider_config.is_provider_enabled("google_places")
 
     async def search(self, location: str, category: str, **kwargs) -> List[RawLead]:
         """Search Google Places for businesses."""
         limit = kwargs.get("limit", 60)
-        if not self.is_available():
+        api_key = provider_config.get_api_key("google_places") or settings.google_places_api_key
+        if not api_key:
             print("Google Places API key not configured")
             return []
 
@@ -42,7 +44,7 @@ class GooglePlacesProvider(BaseProvider):
 
                 params = {
                     "query": query,
-                    "key": settings.google_places_api_key,
+                    "key": api_key,
                 }
 
                 if next_page_token:

@@ -25,6 +25,7 @@ class RunResponse(BaseModel):
     total_leads: int
     total_emails: int = 0
     total_websites: int = 0
+    total_drafts: int = 0
     selected_providers: Optional[List[str]] = None
     provider_limits: Optional[dict] = None
     error_message: Optional[str] = None
@@ -45,6 +46,7 @@ class RunSummary(BaseModel):
     total_leads: int
     total_emails: int = 0
     total_websites: int = 0
+    total_drafts: int = 0
     created_at: datetime
 
     class Config:

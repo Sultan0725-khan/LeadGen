@@ -1,25 +1,37 @@
+import os
+import re
 from typing import Dict, Optional
 from app.config import settings
-from openai import AsyncOpenAI
 import httpx
-import re
 
 
 class EmailWriter:
-    """Tool to generate personalized outreach emails using LLM."""
+    """Tool to generate personalized outreach emails using Ollama exclusively with Corporate Identity."""
 
     def __init__(self):
-        self.llm_mode = settings.llm_mode.lower()
+        # We now use Ollama exclusively as requested
+        self.ollama_url = settings.ollama_base_url
+        self.ollama_model = settings.ollama_model
 
-        if self.llm_mode == "openai":
-            if not settings.openai_api_key:
-                raise ValueError("OpenAI API key required when llm_mode='openai'")
-            self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        elif self.llm_mode == "ollama":
-            self.ollama_url = settings.ollama_base_url
-            self.ollama_model = settings.ollama_model
-        else:
-            raise ValueError(f"Invalid llm_mode: {self.llm_mode}. Must be 'openai' or 'ollama'")
+        # Load corporate identity context
+        self.company_context = self._load_company_context()
+
+        # Ensure archiving directory exists
+        self.archive_dir = "/Users/sultankhan/DevOps/LeadGen/backend/generated_emails"
+        if not os.path.exists(self.archive_dir):
+            os.makedirs(self.archive_dir)
+
+    def _load_company_context(self) -> str:
+        """Load corporate tone and context from file."""
+        context_path = "/Users/sultankhan/DevOps/LeadGen/backend/company_context.txt"
+        try:
+            if os.path.exists(context_path):
+                with open(context_path, 'r', encoding='utf-8') as f:
+                    return f.read().strip()
+            return ""
+        except Exception as e:
+            print(f"Warning: Could not load company_context.txt: {e}")
+            return ""
 
     async def generate_email(
         self,
@@ -29,28 +41,27 @@ class EmailWriter:
         language: str = "DE"
     ) -> Dict[str, str]:
         """
-        Generate personalized email for a lead.
-
-        Returns dict with 'subject' and 'body' keys.
+        Generate personalized email for a lead using Ollama.
         """
+        # Load corporate identity context based on language
+        company_context = self._load_company_context_by_lang(language)
+
         # Build context for LLM
         context = self._build_context(lead, run_location, run_category)
         prompt = self._build_prompt(context, language)
 
         try:
-            # Route to appropriate LLM provider
-            if self.llm_mode == "openai":
-                email_text = await self._generate_with_openai(prompt)
-            elif self.llm_mode == "ollama":
-                email_text = await self._generate_with_ollama(prompt)
-            else:
-                raise ValueError(f"Unknown LLM mode: {self.llm_mode}")
+            # Generate exclusively with Ollama
+            email_text = await self._generate_with_ollama(prompt, company_context, language)
 
             # Parse subject and body
             subject, body = self._parse_email(email_text, language)
 
             # Add unsubscribe footer
             body_with_footer = self._add_unsubscribe_footer(body, language)
+
+            # Archive the email locally
+            self._archive_email(lead.get("business_name", "unknown"), subject, body_with_footer)
 
             return {
                 "subject": subject,
@@ -59,50 +70,74 @@ class EmailWriter:
 
         except Exception as e:
             business_name = lead.get("business_name", "")
-            print(f"Error generating email for {business_name}: {e}")
-            # Fallback to template
+            print(f"Error generating email for {business_name} with Ollama: {e}")
+            # Fallback to template if local LLM fails
             return self._generate_fallback_email(lead, run_location, run_category, language)
 
-    async def _generate_with_openai(self, prompt: str) -> str:
-        """Generate email using OpenAI API."""
-        response = await self.client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert email copywriter specializing in B2B outreach for local businesses. "
-                               "Write professional, friendly, and personalized emails that feel authentic and respectful."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.7,
-            max_tokens=500
-        )
-        return response.choices[0].message.content.strip()
+    def _load_company_context_by_lang(self, language: str) -> str:
+        """Load corporate tone and context from file based on language."""
+        suffix = "GER" if language.upper() == "DE" else "EN"
+        context_path = f"/Users/sultankhan/DevOps/LeadGen/backend/company_context{suffix}.txt"
 
-    async def _generate_with_ollama(self, prompt: str) -> str:
+        # Fallback to shared context if language-specific doesn't exist
+        if not os.path.exists(context_path):
+            context_path = "/Users/sultankhan/DevOps/LeadGen/backend/company_context.txt"
+
+        try:
+            if os.path.exists(context_path):
+                with open(context_path, 'r', encoding='utf-8') as f:
+                    return f.read().strip()
+            return "You are an expert B2B copywriter."
+        except Exception as e:
+            print(f"Warning: Could not load {context_path}: {e}")
+            return "You are an expert B2B copywriter."
+
+    async def _generate_with_ollama(self, prompt: str, company_context: str, language: str) -> str:
         """Generate email using Ollama local LLM."""
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                f"{self.ollama_url}/api/generate",
-                json={
-                    "model": self.ollama_model,
-                    "prompt": f"""You are an expert email copywriter specializing in B2B outreach for local businesses. Write professional, friendly, and personalized emails that feel authentic and respectful.
+        lang_instruction = "AUSSCHLIESSLICH auf DEUTSCH" if language.upper() == "DE" else "EXCLUSIVELY in ENGLISH"
+
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            try:
+                response = await client.post(
+                    f"{self.ollama_url}/api/generate",
+                    json={
+                        "model": self.ollama_model,
+                        "prompt": f"""{company_context}
+
+IMPORTANT: Write the email {lang_instruction}. Respond ONLY with the email subject and body.
 
 {prompt}""",
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.7,
-                        "num_predict": 500
+                        "stream": False,
+                        "options": {
+                            "temperature": 0.7,
+                            "num_predict": 500
+                        }
                     }
-                }
-            )
-            response.raise_for_status()
-            result = response.json()
-            return result.get("response", "").strip()
+                )
+                response.raise_for_status()
+                result = response.json()
+                return result.get("response", "").strip()
+            except Exception as e:
+                print(f"Ollama connection error: {e}")
+                raise
+
+    def _archive_email(self, business_name: str, subject: str, body: str):
+        """Save generated email to a local file for archiving."""
+        try:
+            # Clean filename
+            clean_name = re.sub(r'[^\w\s-]', '', business_name).strip().replace(' ', '_')
+            timestamp = os.popen('date +%Y%m%d_%H%M%S').read().strip()
+            filename = f"{timestamp}_{clean_name}.txt"
+            filepath = os.path.join(self.archive_dir, filename)
+
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(f"SUBJECT: {subject}\n")
+                f.write("-" * 50 + "\n")
+                f.write(body)
+
+            print(f"Archived email to {filepath}")
+        except Exception as e:
+            print(f"Failed to archive email: {e}")
 
     def _build_context(self, lead: Dict, location: str, category: str) -> Dict:
         """Build context dict for email generation."""
@@ -132,12 +167,12 @@ The email should:
 4. Ask if they'd be interested in a quick conversation
 5. Sound friendly and authentic, not salesy
 
-Format your response as:
+Format your response exactly as:
 Subject: [email subject]
 
 [email body]
 
-Do NOT include an unsubscribe line (we'll add that automatically)."""
+Do NOT include an unsubscribe line."""
 
         return prompt
 

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from app.models.email import EmailStatus
 
 
@@ -18,3 +18,15 @@ class EmailResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class EmailDraftRequest(BaseModel):
+    """Request to draft emails for specific leads."""
+    lead_ids: List[str]
+    language: str = "DE"
+
+
+class EmailUpdateRequest(BaseModel):
+    """Request to update an email draft."""
+    subject: str
+    body: str

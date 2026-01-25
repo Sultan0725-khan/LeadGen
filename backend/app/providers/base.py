@@ -56,6 +56,18 @@ class BaseProvider(ABC):
         """
         pass
 
+    def calculate_credits(self, **kwargs) -> int:
+        """
+        Calculate credits consumed by a search.
+
+        Args:
+            **kwargs: Parameters passed to search or results info
+
+        Returns:
+            Number of credits consumed
+        """
+        return 1
+
     def is_available(self) -> bool:
         """Check if provider is configured and available."""
         return True

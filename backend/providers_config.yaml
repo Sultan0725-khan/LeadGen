@@ -13,19 +13,7 @@ providers:
     quota_period: "daily"
     query_limit: 100 # Default WHERE limit
 
-  google_places:
-    enabled: false
-    name: "Google Places API"
-    description: "Google's business data"
-    requires_api_key: true
-    api_key: "" # Add your key here
-    free_tier: false
-    daily_limit: "Pay per use"
-    quota_limit: 0
-    quota_period: "daily"
-    query_limit: 50
-
-  geoaepify:
+  geoapify:
     enabled: true
     name: "Geoapify Places"
     description: "OSM-based POI data"
@@ -50,29 +38,17 @@ providers:
     quota_period: "daily"
     query_limit: 100
 
-  mapquest:
+  google_places:
     enabled: false
-    name: "MapQuest Search"
-    description: "POI and location search"
+    name: "Google Places API"
+    description: "Google's business data"
     requires_api_key: true
     api_key: "" # Add your key here
-    free_tier: true
-    daily_limit: "15,000 requests/month"
-    quota_limit: 15000
-    quota_period: "monthly"
-    query_limit: 100
-
-  yelp:
-    enabled: false
-    name: "Yelp Fusion API"
-    description: "Business data with reviews"
-    requires_api_key: true
-    api_key: "" # Add your key here
-    free_tier: true
-    daily_limit: "5,000 requests/day"
-    quota_limit: 5000
+    free_tier: false
+    daily_limit: "Pay per use"
+    quota_limit: 0
     quota_period: "daily"
-    query_limit: 100
+    query_limit: 50
 
 # Default providers to use if none specified in run
 default_providers:

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Integer, Float, JSON, Enum, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from app.utils.timezone import get_german_now
 import uuid
 import enum
 from app.database import Base
@@ -32,9 +33,10 @@ class Run(Base):
     # Enrichment statistics
     total_emails = Column(Integer, default=0)  # Count of leads with email
     total_websites = Column(Integer, default=0)  # Count of leads with website
+    total_drafts = Column(Integer, default=0)   # Count of leads with an email draft
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=get_german_now)
+    updated_at = Column(DateTime, default=get_german_now, onupdate=get_german_now)
     completed_at = Column(DateTime, nullable=True)
 
     # Relationships

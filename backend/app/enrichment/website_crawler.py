@@ -2,7 +2,7 @@ import httpx
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import asyncio
 
 
@@ -66,3 +66,24 @@ class WebsiteCrawler:
         if html:
             return BeautifulSoup(html, 'lxml')
         return None
+
+    def find_contact_links(self, soup: BeautifulSoup, base_url: str) -> List[str]:
+        """Find likely contact/info page links."""
+        links = []
+        # Keywords for contact/impressum pages
+        keywords = ['contact', 'kontakt', 'impressum', 'about', 'über', 'info', 'legal', 'rechtliches']
+
+        for link in soup.find_all('a', href=True):
+            href = link['href']
+            text = link.get_text().lower()
+
+            # Check if text or href contains keywords
+            if any(k in text or k in href.lower() for k in keywords):
+                full_url = urljoin(base_url, href)
+                # Keep only internal links
+                if urlparse(full_url).netloc == urlparse(base_url).netloc:
+                    links.append(full_url)
+
+        # Sort and deduplicate, prioritizing contact/impressum
+        sorted_links = sorted(list(set(links)), key=lambda l: any(k in l.lower() for k in ['contact', 'kontakt', 'impressum']))
+        return sorted_links[:3] # Return top 3 candidates

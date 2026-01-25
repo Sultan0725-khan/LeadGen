@@ -34,8 +34,31 @@ class Enricher:
             print(f"Could not crawl {website}")
             return {}
 
-        # Extract all contact information
+        # Extract all contact information from homepage
         enrichment_data = self.extractor.extract_all(soup, website)
+
+        # If no email found on homepage, try subpages
+        if not enrichment_data.get("emails"):
+            contact_links = self.crawler.find_contact_links(soup, website)
+            if contact_links:
+                print(f"No emails on homepage of {lead.get('business_name')}, checking subpages: {contact_links}")
+                for link in contact_links:
+                    sub_soup = await self.crawler.crawl_homepage(link)
+                    if sub_soup:
+                        sub_data = self.extractor.extract_all(sub_soup, link)
+                        # Merge data
+                        enrichment_data["emails"].extend(sub_data.get("emails", []))
+                        enrichment_data["phones"].extend(sub_data.get("phones", []))
+                        enrichment_data["social_links"].update(sub_data.get("social_links", {}))
+
+                        # Stop if we found an email
+                        if enrichment_data["emails"]:
+                            print(f"Found email on subpage {link}")
+                            break
+
+        # Deduplicate
+        enrichment_data["emails"] = list(set(enrichment_data.get("emails", [])))
+        enrichment_data["phones"] = list(set(enrichment_data.get("phones", [])))
 
         # Filter out already known contacts to avoid duplication
         existing_email = lead.get("email")

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from app.utils.timezone import get_german_now
 import uuid
 from app.database import Base
 
@@ -26,8 +27,8 @@ class Lead(Base):
     sources = Column(JSON, default=list)  # List of provider names
     enrichment_data = Column(JSON, default=dict)  # Social profiles, additional contacts
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=get_german_now)
+    updated_at = Column(DateTime, default=get_german_now, onupdate=get_german_now)
 
     # Relationships
     run = relationship("Run", back_populates="leads")

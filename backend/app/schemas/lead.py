@@ -19,6 +19,7 @@ class LeadResponse(BaseModel):
     enrichment_data: Dict
     created_at: datetime
     email_status: Optional[str] = None  # From related email record
+    email_id: Optional[str] = None
 
     class Config:
         from_attributes = True

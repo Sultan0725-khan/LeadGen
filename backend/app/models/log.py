@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, Text, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from app.utils.timezone import get_german_now
 import uuid
 import enum
 from app.database import Base
@@ -25,7 +26,7 @@ class Log(Base):
     message = Column(Text, nullable=False)
     context = Column(JSON, default=dict)  # Additional metadata
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_german_now)
 
     # Relationships
     run = relationship("Run", back_populates="logs")

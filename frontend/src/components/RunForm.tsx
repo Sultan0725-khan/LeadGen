@@ -120,32 +120,34 @@ export function RunForm({ onRunCreated }: RunFormProps) {
       {error && <div className="alert alert-error">{error}</div>}
 
       <form onSubmit={handleSubmit} className="form">
-        <div className="form-group">
-          <label htmlFor="location">Location</label>
-          <input
-            id="location"
-            type="text"
-            className="input"
-            placeholder="e.g., Berlin, Mitte or Munich, Bavaria"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            required
-          />
-          <small>Enter city, district, or region</small>
-        </div>
+        <div className="form-grid">
+          <div className="form-group">
+            <label htmlFor="location">Location</label>
+            <input
+              id="location"
+              type="text"
+              className="input"
+              placeholder="e.g., Berlin, Mitte"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              required
+            />
+            <small>City, district, or region</small>
+          </div>
 
-        <div className="form-group">
-          <label htmlFor="category">Category</label>
-          <input
-            id="category"
-            type="text"
-            className="input"
-            placeholder="e.g., restaurant, café, bar"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            required
-          />
-          <small>Business type or industry</small>
+          <div className="form-group">
+            <label htmlFor="category">Category</label>
+            <input
+              id="category"
+              type="text"
+              className="input"
+              placeholder="e.g., restaurant, café"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+            />
+            <small>Business type or industry</small>
+          </div>
         </div>
 
         {/* Provider Selection */}

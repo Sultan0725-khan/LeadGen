@@ -3,6 +3,7 @@ from app.providers.base import BaseProvider
 from app.providers.osm_overpass import OSMOverpassProvider
 from app.providers.google_places import GooglePlacesProvider
 from app.providers.geoapify import GeoapifyProvider
+from app.providers.tomtom import TomTomProvider
 
 
 class ProviderRegistry:
@@ -12,6 +13,7 @@ class ProviderRegistry:
         OSMOverpassProvider,
         GooglePlacesProvider,
         GeoapifyProvider,
+        TomTomProvider,
         # Add more providers here
     ]
 

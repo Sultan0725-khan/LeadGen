@@ -1,5 +1,6 @@
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
 from datetime import datetime
+from app.utils.timezone import get_german_now
 from sqlalchemy.orm import Session
 from app.models import Run, RunStatus, Lead, Email, EmailStatus, Log, LogLevel
 from app.agents.lead_collector import LeadCollector
@@ -8,6 +9,7 @@ from app.agents.enricher import Enricher
 from app.agents.scorer import Scorer
 from app.agents.email_writer import EmailWriter
 from app.agents.email_sender import EmailSender
+from app.services.usage_service import increment_provider_usage
 import asyncio
 
 
@@ -38,13 +40,18 @@ class AgentOrchestrator:
 
             # Step 1: Collect leads from providers
             self._log(run, LogLevel.INFO, f"Collecting leads for {run.category} in {run.location}")
-            raw_leads = await self.lead_collector.collect(
+            raw_leads, usage_info = await self.lead_collector.collect(
                 run.location,
                 run.category,
                 selected_providers=run.selected_providers,
                 provider_limits=run.provider_limits
             )
             self._log(run, LogLevel.INFO, f"Collected {len(raw_leads)} raw leads")
+
+            # Record credit usage in database
+            for provider_id, credits in usage_info.items():
+                await increment_provider_usage(provider_id, self.db, credits)
+                self._log(run, LogLevel.INFO, f"Provider {provider_id} consumed {credits} credits")
 
             # Step 2: Normalize and deduplicate
             self._log(run, LogLevel.INFO, "Normalizing and deduplicating leads")
@@ -78,8 +85,8 @@ class AgentOrchestrator:
 
             # Mark run as completed
             run.status = RunStatus.COMPLETED
-            run.total_leads = len(lead_records)
-            run.completed_at = datetime.utcnow()
+            run.completed_at = get_german_now()
+            self._refresh_run_stats(run)
             self.db.commit()
             self._log(run, LogLevel.INFO, "Run completed successfully")
 
@@ -87,7 +94,7 @@ class AgentOrchestrator:
             # Mark run as failed
             run.status = RunStatus.FAILED
             run.error_message = str(e)
-            run.completed_at = datetime.utcnow()
+            run.completed_at = get_german_now()
             self.db.commit()
             self._log(run, LogLevel.ERROR, f"Run failed: {str(e)}")
             raise
@@ -107,6 +114,17 @@ class AgentOrchestrator:
                     lead["enrichment_data"] = {}
                 else:
                     lead["enrichment_data"] = enrichment
+
+        if leads:
+            run_id = leads[0]['run_id']
+            self.db.query(Run).filter(Run.id == run_id).update({
+                "total_websites": self.db.query(Lead).filter(
+                    Lead.run_id == run_id,
+                    Lead.website != None,
+                    Lead.website != ""
+                ).count()
+            })
+            self.db.commit()
 
     def _save_leads(self, run: Run, normalized_leads: list) -> list:
         """Save normalized leads to database."""
@@ -128,59 +146,112 @@ class AgentOrchestrator:
                 confidence_score=lead_data.get("confidence_score", 0.0),
                 sources=lead_data.get("sources", []),
                 enrichment_data=lead_data.get("enrichment_data", {}),
+                created_at=get_german_now(),
+                updated_at=get_german_now()
             )
 
             self.db.add(lead)
             lead_records.append((lead, lead_data))
 
         self.db.commit()
+
+        self.db.commit()
+        self._refresh_run_stats(run)
+
         return lead_records
 
     async def _generate_emails(self, run: Run, lead_records: list):
         """Generate personalized emails for leads."""
         for lead, lead_data in lead_records:
-            # Skip if no contact email
-            if not lead.email:
-                self._log(run, LogLevel.WARNING, f"No email for {lead.business_name}", lead_id=lead.id)
-                continue
+            await self.generate_email_for_lead(lead, lead_data, run)
 
-            # Determine language (default from config, or detect from location)
-            language = run.location and any(
-                country in run.location.lower()
-                for country in ['germany', 'deutschland', 'berlin', 'munich', 'hamburg']
+        # Refresh run stats after batch generation
+        self._refresh_run_stats(run)
+
+    async def generate_email_for_lead(
+        self,
+        lead: Lead,
+        lead_data: dict,
+        run: Run,
+        force_status: Optional[EmailStatus] = None,
+        language: str = "DE" # Default is DE
+    ) -> Optional[Email]:
+        """Generate a single personalized email for a lead."""
+        if not lead.email:
+            self._log(run, LogLevel.WARNING, f"No email for {lead.business_name}", lead_id=lead.id)
+            return None
+
+        # Use the provided language preference
+        try:
+            email_content = await self.email_writer.generate_email(
+                lead_data, run.location, run.category, language
             )
-            lang = "DE" if language else "EN"
 
-            try:
-                email_content = await self.email_writer.generate_email(
-                    lead_data,
-                    run.location,
-                    run.category,
-                    lang
-                )
+            if force_status:
+                status = force_status
+            elif run.require_approval:
+                status = EmailStatus.PENDING_APPROVAL
+            elif run.dry_run:
+                status = EmailStatus.DRAFTED
+            else:
+                status = EmailStatus.APPROVED
 
-                # Determine initial status
-                if run.require_approval:
-                    status = EmailStatus.PENDING_APPROVAL
-                elif run.dry_run:
-                    status = EmailStatus.DRAFTED
-                else:
-                    status = EmailStatus.APPROVED
-
+            email = self.db.query(Email).filter(Email.lead_id == lead.id).first()
+            if email:
+                email.subject = email_content["subject"]
+                email.body = email_content["body"]
+                email.status = status
+                email.generated_at = get_german_now()
+            else:
                 email = Email(
                     lead_id=lead.id,
                     status=status,
                     subject=email_content["subject"],
                     body=email_content["body"],
-                    language=lang,
+                    language=language,
+                    generated_at=get_german_now()
                 )
-
                 self.db.add(email)
 
-            except Exception as e:
-                self._log(run, LogLevel.ERROR, f"Email generation failed: {str(e)}", lead_id=lead.id)
+            self.db.commit()
+            # Do NOT update run.total_emails here; it should represent "Emails Found"
+            return email
+        except Exception as e:
+            self._log(run, LogLevel.ERROR, f"Email generation failed for {lead.business_name}: {str(e)}", lead_id=lead.id)
+            return None
 
-        self.db.commit()
+    async def draft_targeted_emails(self, lead_ids: List[str], language: str = "DE") -> int:
+        """Draft emails for a specific set of leads with language support."""
+        leads = self.db.query(Lead).filter(Lead.id.in_(lead_ids)).all()
+        if not leads:
+            return 0
+
+        # Run generation in parallel for performance
+        tasks = []
+        for lead in leads:
+            run = self.db.query(Run).filter(Run.id == lead.run_id).first()
+            lead_data = {
+                "business_name": lead.business_name,
+                "address": lead.address,
+                "website": lead.website,
+                "email": lead.email,
+                "phone": lead.phone,
+                "enrichment_data": lead.enrichment_data or {}
+            }
+            # When manually drafting, always set to DRAFTED so it's editable in UI
+            tasks.append(self.generate_email_for_lead(
+                lead, lead_data, run, force_status=EmailStatus.DRAFTED, language=language
+            ))
+
+        results = await asyncio.gather(*tasks)
+        drafted_count = len([r for r in results if r is not None])
+
+        # Refresh run stats after manual drafting
+        run = self.db.query(Run).filter(Run.id == leads[0].run_id).first()
+        if run:
+            self._refresh_run_stats(run)
+
+        return drafted_count
 
     async def _send_emails(self, run: Run):
         """Send approved emails."""
@@ -202,12 +273,41 @@ class AgentOrchestrator:
 
             if success:
                 email.status = EmailStatus.SENT
-                email.sent_at = datetime.utcnow()
+                email.sent_at = get_german_now()
                 self._log(run, LogLevel.INFO, f"Email sent to {lead.business_name}", lead_id=lead.id)
             else:
                 email.status = EmailStatus.FAILED
                 email.error_message = error
                 self._log(run, LogLevel.ERROR, f"Email send failed: {error}", lead_id=lead.id)
+
+        self.db.commit()
+
+    def _refresh_run_stats(self, run: Run):
+        """Update all run-level statistics from current database state."""
+        from app.models.email import Email, EmailStatus
+
+        # Leads count
+        run.total_leads = self.db.query(Lead).filter(Lead.run_id == run.id).count()
+
+        # Website count
+        run.total_websites = self.db.query(Lead).filter(
+            Lead.run_id == run.id,
+            Lead.website != None,
+            Lead.website != ""
+        ).count()
+
+        # Email Found count
+        run.total_emails = self.db.query(Lead).filter(
+            Lead.run_id == run.id,
+            Lead.email != None,
+            Lead.email != ""
+        ).count()
+
+        # Drafts count (Generated non-failed, non-pending emails)
+        run.total_drafts = self.db.query(Email).join(Lead).filter(
+            Lead.run_id == run.id,
+            Email.status.in_([EmailStatus.DRAFTED, EmailStatus.APPROVED, EmailStatus.SENT])
+        ).count()
 
         self.db.commit()
 
@@ -218,6 +318,7 @@ class AgentOrchestrator:
             lead_id=lead_id,
             level=level,
             message=message,
+            created_at=get_german_now()
         )
         self.db.add(log)
         self.db.commit()

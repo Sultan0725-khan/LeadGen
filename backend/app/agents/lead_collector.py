@@ -1,6 +1,7 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from app.providers.registry import ProviderRegistry
 from app.providers.base import RawLead
+from app.provider_config import provider_config
 import asyncio
 
 
@@ -13,13 +14,19 @@ class LeadCollector:
         category: str,
         selected_providers: List[str] = None,
         provider_limits: Dict[str, int] = None
-    ) -> List[Dict]:
+    ) -> Tuple[List[Dict], Dict[str, int]]:
         """
         Collect leads from all available providers in parallel.
 
-        Returns list of raw leads with provider provenance.
+        Returns tuple of (list of leads, dict of provider usage).
         """
         print(f"[LeadCollector] Starting collection for location='{location}', category='{category}'")
+
+        # Determine which providers to use
+        if not selected_providers:
+            selected_providers = provider_config.get_default_providers()
+            print(f"[LeadCollector] No providers selected, using defaults: {selected_providers}")
+
         providers = ProviderRegistry.get_available_providers(selected_providers)
 
         print(f"[LeadCollector] ProviderRegistry returned {len(providers) if providers else 0} providers")
@@ -28,7 +35,7 @@ class LeadCollector:
 
         if not providers:
             print("[LeadCollector] ERROR: No providers available!")
-            return []
+            return [], {}
 
         print(f"Collecting leads from {len(providers)} providers: {[p.name for p in providers]}")
 
@@ -47,13 +54,18 @@ class LeadCollector:
 
         # Flatten results and add provenance
         all_leads = []
+        usage_info = {}
+
         for provider, result in zip(providers, results):
             if isinstance(result, Exception):
                 print(f"Error from {provider.name}: {result}")
                 continue
 
+            # Unpack search result and credits
+            leads_from_provider, provider_credits = result
+            usage_info[provider.id] = provider_credits
+
             limit = provider_limits.get(provider.id) if provider_limits else None
-            leads_from_provider = result
             if limit and len(leads_from_provider) > limit:
                 leads_from_provider = leads_from_provider[:limit]
 
@@ -72,21 +84,29 @@ class LeadCollector:
                 all_leads.append(lead_dict)
 
         print(f"Collected {len(all_leads)} total leads")
-        return all_leads
+        return all_leads, usage_info
 
-    async def _collect_from_provider(self, provider, location: str, category: str, limit: int = None) -> List[RawLead]:
+    async def _collect_from_provider(self, provider, location: str, category: str, limit: int = None) -> Tuple[List[RawLead], int]:
         """Collect from a single provider with error handling."""
-        print(f"[LeadCollector] Calling {provider.name}.search(location='{location}', category='{category}', limit={limit})")
+        actual_limit = limit or 100
+        print(f"[LeadCollector] Calling {provider.name}.search(location='{location}', category='{category}', limit={actual_limit})")
         try:
             kwargs = {}
             if limit:
                 kwargs["limit"] = limit
 
             leads = await provider.search(location, category, **kwargs)
-            print(f"{provider.name}: found {len(leads)} leads")
-            return leads
+
+            # Calculate credits consumed
+            # Note: We use actual_limit for calculation since API call was made with it
+            # or we could use len(leads) if the provider charges per returned result.
+            # Geoapify charges per limit/returned results.
+            credits = provider.calculate_credits(limit=actual_limit, count=len(leads))
+
+            print(f"{provider.name}: found {len(leads)} leads, cost {credits} credits")
+            return leads, credits
         except Exception as e:
             print(f"{provider.name}: ERROR - {e}")
             import traceback
             traceback.print_exc()
-            return []
+            return [], 0

@@ -8,21 +8,12 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite:///./leadgen.db"
 
-    # LLM Configuration
-    llm_mode: str = "ollama"  # Options: "openai", "ollama"
-
-    # OpenAI (only required if llm_mode="openai")
-    openai_api_key: Optional[str] = None
-
-    # Ollama Configuration
-    ollama_base_url: str = "http://localhost:11434"
+    # LLM Configuration (Exclusive Offline Ollama support)
+    ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "llama2"
 
     # Google Places API
     google_places_api_key: Optional[str] = None
-
-    # Yelp Fusion API
-    yelp_api_key: Optional[str] = None
 
     # Email SMTP
     smtp_host: Optional[str] = None
@@ -42,6 +33,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 settings = Settings()

@@ -33,6 +33,19 @@ export interface Lead {
   enrichment_data: any;
   created_at: string;
   email_status?: string;
+  email_id?: string;
+}
+
+export interface Email {
+  id: string;
+  lead_id: string;
+  status: string;
+  subject: string;
+  body: string;
+  language: string;
+  generated_at: string;
+  sent_at?: string;
+  error_message?: string;
 }
 
 export interface Provider {
@@ -106,15 +119,66 @@ export const api = {
     runId: string,
     page = 1,
     per_page = 50,
+    filters?: {
+      has_email?: boolean;
+      has_website?: boolean;
+      email_status?: string;
+    },
   ): Promise<{ leads: Lead[]; total: number }> {
-    const response = await fetch(
-      `${API_BASE_URL}/leads/run/${runId}?page=${page}&per_page=${per_page}`,
-    );
+    let url = `${API_BASE_URL}/leads/run/${runId}?page=${page}&per_page=${per_page}`;
+    if (filters?.has_email !== undefined)
+      url += `&has_email=${filters.has_email}`;
+    if (filters?.has_website !== undefined)
+      url += `&has_website=${filters.has_website}`;
+    if (filters?.email_status !== undefined)
+      url += `&email_status=${filters.email_status}`;
+
+    const response = await fetch(url);
     if (!response.ok) throw new Error("Failed to fetch leads");
     return response.json();
   },
 
   // Emails
+  async draftEmails(
+    leadIds: string[],
+    language = "DE",
+  ): Promise<{ drafted_count: number }> {
+    const response = await fetch(`${API_BASE_URL}/emails/draft`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lead_ids: leadIds, language }),
+    });
+    if (!response.ok) throw new Error("Failed to draft emails");
+    return response.json();
+  },
+
+  async getEmail(emailId: string): Promise<Email> {
+    const response = await fetch(`${API_BASE_URL}/emails/${emailId}`);
+    if (!response.ok) throw new Error("Failed to fetch email");
+    return response.json();
+  },
+
+  async updateEmail(
+    emailId: string,
+    data: { subject: string; body: string },
+  ): Promise<Email> {
+    const response = await fetch(`${API_BASE_URL}/emails/${emailId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error("Failed to update email");
+    return response.json();
+  },
+
+  async sendEmail(emailId: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/emails/${emailId}/send`, {
+      method: "POST",
+    });
+    if (!response.ok) throw new Error("Failed to send email");
+    return response.json();
+  },
+
   async approveEmail(emailId: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/emails/${emailId}/approve`, {
       method: "POST",

@@ -72,16 +72,28 @@ class EmailSender:
 
         # Send via SMTP
         if settings.smtp_host and settings.smtp_username and settings.smtp_password:
-            await aiosmtplib.send(
-                message,
-                hostname=settings.smtp_host,
-                port=settings.smtp_port,
-                username=settings.smtp_username,
-                password=settings.smtp_password,
-                start_tls=True,
-            )
+            # Zoho and other providers often require SSL on 465 or STARTTLS on 587
+            use_tls = (settings.smtp_port == 465)
+            start_tls = (settings.smtp_port == 587)
+
+            try:
+                await aiosmtplib.send(
+                    message,
+                    hostname=settings.smtp_host,
+                    port=settings.smtp_port,
+                    username=settings.smtp_username,
+                    password=settings.smtp_password,
+                    use_tls=use_tls,
+                    start_tls=start_tls,
+                    timeout=30.0
+                )
+            except Exception as e:
+                # Catch specific auth errors to provide better feedback
+                if "535" in str(e):
+                    raise ValueError(f"SMTP Authentication Failed: Check your username/password. For Zoho/Gmail, ensure you use an 'App Password' if 2FA is enabled. Details: {e}")
+                raise e
         else:
-            raise ValueError("SMTP credentials not configured")
+            raise ValueError("SMTP credentials not configured in .env")
 
     def add_to_optout(self, email: str, db: Session):
         """Add email to opt-out list."""

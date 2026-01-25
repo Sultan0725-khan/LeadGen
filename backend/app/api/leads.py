@@ -24,17 +24,44 @@ def get_run_leads(
     per_page: int = Query(50, ge=1, le=200),
     min_score: Optional[float] = Query(None, ge=0, le=1),
     email_status: Optional[str] = None,
+    has_email: Optional[bool] = None,
+    has_website: Optional[bool] = None,
     db: Session = Depends(get_db)
 ):
     """Get leads for a run with pagination and filters."""
-    # Build query
-    query = db.query(Lead).filter(Lead.run_id == run_id)
+    # Build query with optional join for email status filtering
+    query = db.query(Lead).outerjoin(Email, Lead.id == Email.lead_id)
+    query = query.filter(Lead.run_id == run_id)
 
     # Apply filters
     if min_score is not None:
         query = query.filter(Lead.confidence_score >= min_score)
 
-    # Get total count
+    if has_email is True:
+        query = query.filter(Lead.email != None)
+    elif has_email is False:
+        query = query.filter(Lead.email == None)
+
+    if has_website is True:
+        query = query.filter(Lead.website != None)
+    elif has_website is False:
+        query = query.filter(Lead.website == None)
+
+    # Email status filtering (server-side for proper pagination)
+    if email_status == "new":
+        from app.models.email import EmailStatus
+        query = query.filter((Email.id == None) | (Email.status.in_([EmailStatus.FAILED, EmailStatus.PENDING_APPROVAL])))
+    elif email_status == "drafted":
+        from app.models.email import EmailStatus
+        query = query.filter(Email.status.in_([
+            EmailStatus.DRAFTED,
+            EmailStatus.APPROVED,
+            EmailStatus.SENT
+        ]))
+    elif email_status:
+        query = query.filter(Email.status == email_status)
+
+    # Get total count BEFORE pagination
     total = query.count()
 
     # Apply pagination
@@ -61,12 +88,9 @@ def get_run_leads(
             enrichment_data=lead.enrichment_data,
             created_at=lead.created_at,
             email_status=email_record.status.value if email_record else None,
+            email_id=email_record.id if email_record else None,
         )
         lead_responses.append(lead_response)
-
-    # Filter by email status if requested
-    if email_status:
-        lead_responses = [l for l in lead_responses if l.email_status == email_status]
 
     return LeadListResponse(
         leads=lead_responses,
@@ -101,4 +125,5 @@ def get_lead(lead_id: str, db: Session = Depends(get_db)):
         enrichment_data=lead.enrichment_data,
         created_at=lead.created_at,
         email_status=email_record.status.value if email_record else None,
+        email_id=email_record.id if email_record else None,
     )

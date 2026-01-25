@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Integer, Date
 from datetime import date
+from app.utils.timezone import get_german_now
 from app.database import Base
 
 
@@ -9,7 +10,7 @@ class ProviderUsage(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     provider_id = Column(String, nullable=False, index=True)
-    date = Column(Date, nullable=False, default=date.today, index=True)
+    date = Column(Date, nullable=False, default=lambda: get_german_now().date(), index=True)
     usage_count = Column(Integer, default=0, nullable=False)
     quota_limit = Column(Integer, nullable=True)  # Daily or monthly limit
 

@@ -30,23 +30,7 @@ async def create_run(run_data: RunCreate, db: Session = Depends(get_db)):
     # Enqueue for processing
     job_queue.enqueue(run.id)
 
-    return RunResponse(
-        id=run.id,
-        status=run.status,
-        location=run.location,
-        category=run.category,
-        require_approval=bool(run.require_approval),
-        dry_run=bool(run.dry_run),
-        total_leads=run.total_leads,
-        total_emails=run.total_emails or 0,
-        total_websites=run.total_websites or 0,
-        selected_providers=run.selected_providers or [],
-        provider_limits=run.provider_limits or {},
-        error_message=run.error_message,
-        created_at=run.created_at,
-        updated_at=run.updated_at,
-        completed_at=run.completed_at,
-    )
+    return RunResponse.model_validate(run)
 
 
 @router.get("/", response_model=List[RunSummary])
@@ -54,19 +38,7 @@ def list_runs(db: Session = Depends(get_db)):
     """List all runs."""
     runs = db.query(Run).order_by(Run.created_at.desc()).all()
 
-    return [
-        RunSummary(
-            id=run.id,
-            status=run.status,
-            location=run.location,
-            category=run.category,
-            total_leads=run.total_leads,
-            total_emails=run.total_emails or 0,
-            total_websites=run.total_websites or 0,
-            created_at=run.created_at,
-        )
-        for run in runs
-    ]
+    return [RunSummary.model_validate(run) for run in runs]
 
 
 @router.get("/{run_id}", response_model=RunResponse)
@@ -77,24 +49,7 @@ def get_run(run_id: str, db: Session = Depends(get_db)):
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
 
-    return RunResponse(
-        id=run.id,
-        status=run.status,
-        location=run.location,
-        category=run.category,
-        require_approval=bool(run.require_approval),
-        dry_run=bool(run.dry_run),
-        total_leads=run.total_leads,
-        total_emails=run.total_emails or 0,
-        total_websites=run.total_websites or 0,
-        selected_providers=run.selected_providers or [],
-        provider_limits=run.provider_limits or {},
-        error_message=run.error_message,
-        created_at=run.created_at,
-        updated_at=run.updated_at,
-        completed_at=run.completed_at,
-    )
-
+    return RunResponse.model_validate(run)
 
 @router.delete("/{run_id}", status_code=204)
 def delete_run(run_id: str, db: Session = Depends(get_db)):
