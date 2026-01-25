@@ -17,9 +17,20 @@ class LeadResponse(BaseModel):
     confidence_score: float
     sources: List[str]
     enrichment_data: Dict
+    notes: Optional[str] = None
     created_at: datetime
     email_status: Optional[str] = None  # From related email record
     email_id: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class LeadUpdate(BaseModel):
+    """Schema for updating lead info."""
+    business_name: Optional[str] = None
+    address: Optional[str] = None
+    website: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    notes: Optional[str] = None

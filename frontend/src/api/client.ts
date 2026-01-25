@@ -31,6 +31,7 @@ export interface Lead {
   confidence_score: number;
   sources: string[];
   enrichment_data: any;
+  notes?: string;
   created_at: string;
   email_status?: string;
   email_id?: string;
@@ -234,6 +235,16 @@ export const api = {
       },
     );
     if (!response.ok) throw new Error("Failed to refresh provider stats");
+    return response.json();
+  },
+
+  async patch(url: string, data: any): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error(`Failed to patch ${url}`);
     return response.json();
   },
 };

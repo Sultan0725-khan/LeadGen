@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
-from app.schemas.lead import LeadResponse
+from app.schemas.lead import LeadResponse, LeadUpdate
 from app.models import Lead, Email
 from pydantic import BaseModel
 
@@ -64,9 +64,16 @@ def get_run_leads(
     # Get total count BEFORE pagination
     total = query.count()
 
-    # Apply pagination
+    # Apply pagination and sorting
+    # Default sorting: confidence score
+    # But for "drafted" tab, we might want DESC by latest email activity
     offset = (page - 1) * per_page
-    leads = query.order_by(Lead.confidence_score.desc()).offset(offset).limit(per_page).all()
+
+    if email_status == "drafted":
+        # Sort by latest email activity (or lead creation if no email yet)
+        leads = query.order_by(Lead.created_at.desc()).offset(offset).limit(per_page).all()
+    else:
+        leads = query.order_by(Lead.confidence_score.desc()).offset(offset).limit(per_page).all()
 
     # Build response with email status
     lead_responses = []
@@ -86,6 +93,7 @@ def get_run_leads(
             confidence_score=lead.confidence_score,
             sources=lead.sources,
             enrichment_data=lead.enrichment_data,
+            notes=lead.notes,
             created_at=lead.created_at,
             email_status=email_record.status.value if email_record else None,
             email_id=email_record.id if email_record else None,
@@ -123,6 +131,45 @@ def get_lead(lead_id: str, db: Session = Depends(get_db)):
         confidence_score=lead.confidence_score,
         sources=lead.sources,
         enrichment_data=lead.enrichment_data,
+        notes=lead.notes,
+        created_at=lead.created_at,
+        email_status=email_record.status.value if email_record else None,
+        email_id=email_record.id if email_record else None,
+    )
+
+
+@router.patch("/{lead_id}", response_model=LeadResponse)
+def update_lead(lead_id: str, lead_update: LeadUpdate, db: Session = Depends(get_db)):
+    """Update a specific lead."""
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    # Update fields
+    update_data = lead_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(lead, key, value)
+
+    db.commit()
+    db.refresh(lead)
+
+    email_record = db.query(Email).filter(Email.lead_id == lead.id).first()
+
+    return LeadResponse(
+        id=lead.id,
+        run_id=lead.run_id,
+        business_name=lead.business_name,
+        address=lead.address,
+        website=lead.website,
+        email=lead.email,
+        phone=lead.phone,
+        latitude=lead.latitude,
+        longitude=lead.longitude,
+        confidence_score=lead.confidence_score,
+        sources=lead.sources,
+        enrichment_data=lead.enrichment_data,
+        notes=lead.notes,
         created_at=lead.created_at,
         email_status=email_record.status.value if email_record else None,
         email_id=email_record.id if email_record else None,

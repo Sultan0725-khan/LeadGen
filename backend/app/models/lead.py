@@ -26,6 +26,7 @@ class Lead(Base):
     confidence_score = Column(Float, default=0.0)
     sources = Column(JSON, default=list)  # List of provider names
     enrichment_data = Column(JSON, default=dict)  # Social profiles, additional contacts
+    notes = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=get_german_now)
     updated_at = Column(DateTime, default=get_german_now, onupdate=get_german_now)

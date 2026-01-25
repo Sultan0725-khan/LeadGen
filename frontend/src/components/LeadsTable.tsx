@@ -9,6 +9,114 @@ interface LeadsTableProps {
   onClose: () => void;
 }
 
+interface LeadEditModalProps {
+  lead: Lead;
+  onSave: (id: string, updates: Partial<Lead>) => Promise<void>;
+  onClose: () => void;
+}
+
+function LeadEditModal({ lead, onSave, onClose }: LeadEditModalProps) {
+  const [formData, setFormData] = useState({
+    business_name: lead.business_name,
+    email: lead.email || "",
+    phone: lead.phone || "",
+    website: lead.website || "",
+    address: lead.address || "",
+    notes: lead.notes || "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onSave(lead.id, formData);
+      onClose();
+    } catch (error) {
+      console.error("Failed to save lead:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content card" style={{ maxWidth: "500px" }}>
+        <h3>Edit Lead</h3>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Business Name</label>
+            <input
+              type="text"
+              value={formData.business_name}
+              onChange={(e) =>
+                setFormData({ ...formData, business_name: e.target.value })
+              }
+            />
+          </div>
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+            />
+          </div>
+          <div className="form-group">
+            <label>Phone</label>
+            <input
+              type="text"
+              value={formData.phone}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+            />
+          </div>
+          <div className="form-group">
+            <label>Website</label>
+            <input
+              type="text"
+              value={formData.website}
+              onChange={(e) =>
+                setFormData({ ...formData, website: e.target.value })
+              }
+            />
+          </div>
+          <div className="form-group">
+            <label>Address</label>
+            <textarea
+              value={formData.address}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
+            />
+          </div>
+          <div className="form-group">
+            <label>Notes</label>
+            <textarea
+              placeholder="Add personal notes here..."
+              value={formData.notes}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
+            />
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn btn-outline" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,6 +124,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [drafting, setDrafting] = useState(false);
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [run, setRun] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"new" | "drafted">("new");
   const [filterHasEmail, setFilterHasEmail] = useState<boolean | null>(null);
@@ -102,10 +211,31 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
       await loadLeads();
       setSelectionMode(false);
       setSelectedIds(new Set());
-    } catch (err) {
-      console.error("Failed to draft emails:", err);
+    } catch (error) {
+      console.error("Failed to draft emails:", error);
     } finally {
       setDrafting(false);
+    }
+  };
+
+  const handleSaveLead = async (id: string, updates: Partial<Lead>) => {
+    try {
+      await api.patch(`/api/leads/${id}`, updates);
+      // Refresh local state
+      setLeads((prev) =>
+        prev.map((l) => (l.id === id ? { ...l, ...updates } : l)),
+      );
+    } catch (error) {
+      console.error("Error updating lead:", error);
+    }
+  };
+
+  const handleUpdateNote = async (id: string, notes: string) => {
+    try {
+      await api.patch(`/api/leads/${id}`, { notes });
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, notes } : l)));
+    } catch (error) {
+      console.error("Error updating note:", error);
     }
   };
 
@@ -351,13 +481,13 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
           <table className="table">
             <thead>
               <tr>
-                {selectionMode && <th className="col-select">Select</th>}
+                <th className="col-select">Select</th>
                 <th className="col-rank">#</th>
                 <th className="col-business">Business Name</th>
                 <th className="col-address">Address</th>
                 <th className="col-contact">Contact</th>
-                <th className="col-score">Score</th>
-                <th className="col-sources">Sources</th>
+                <th className="col-social">Social Media</th>
+                <th className="col-notes">Notes</th>
                 <th className="col-status">Email Status</th>
               </tr>
             </thead>
@@ -367,16 +497,35 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                   key={lead.id}
                   className={selectedIds.has(lead.id) ? "row-selected" : ""}
                 >
-                  {selectionMode && (
-                    <td className="col-select">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(lead.id)}
-                        onChange={() => toggleLeadSelection(lead.id)}
-                        className="checkbox-custom"
-                      />
-                    </td>
-                  )}
+                  <td className="col-select">
+                    {!selectionMode && (
+                      <button
+                        className="btn-text"
+                        onClick={() => setEditingLead(lead)}
+                        style={{ padding: "4px", opacity: 0.6 }}
+                        title="Edit Lead"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                        </svg>
+                      </button>
+                    )}
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(lead.id)}
+                      onChange={() => toggleLeadSelection(lead.id)}
+                      className="checkbox-custom"
+                    />
+                  </td>
                   <td className="col-rank">
                     {(page - 1) * perPage + index + 1}
                   </td>
@@ -403,21 +552,40 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                     )}
                     {!lead.email && !lead.phone && "—"}
                   </td>
-                  <td className="col-score">
-                    <span
-                      className={`score-badge ${getScoreColor(lead.confidence_score)}`}
-                    >
-                      {(lead.confidence_score * 100).toFixed(0)}%
-                    </span>
-                  </td>
-                  <td className="col-sources">
-                    <div className="sources">
-                      {lead.sources.map((source, idx) => (
-                        <span key={idx} className="source-tag">
-                          {source}
-                        </span>
+                  <td className="col-social">
+                    <div className="social-links">
+                      {Object.entries(
+                        lead.enrichment_data?.social_links || {},
+                      ).map(([platform, link]) => (
+                        <a
+                          key={platform}
+                          href={link as string}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-icon"
+                          title={platform}
+                        >
+                          {platform === "facebook" && "FB"}
+                          {platform === "instagram" && "IG"}
+                          {platform === "linkedin" && "LI"}
+                          {platform === "twitter" && "TW"}
+                          {![
+                            "facebook",
+                            "instagram",
+                            "linkedin",
+                            "twitter",
+                          ].includes(platform) && "🔗"}
+                        </a>
                       ))}
                     </div>
+                  </td>
+                  <td className="col-notes">
+                    <textarea
+                      className="note-input"
+                      placeholder="Add note..."
+                      defaultValue={lead.notes || ""}
+                      onBlur={(e) => handleUpdateNote(lead.id, e.target.value)}
+                    />
                   </td>
                   <td className="col-status">
                     {(() => {
@@ -486,6 +654,14 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
           emailId={selectedEmailId}
           onClose={() => setSelectedEmailId(null)}
           onUpdate={loadLeads}
+        />
+      )}
+
+      {editingLead && (
+        <LeadEditModal
+          lead={editingLead}
+          onSave={handleSaveLead}
+          onClose={() => setEditingLead(null)}
         />
       )}
     </div>
