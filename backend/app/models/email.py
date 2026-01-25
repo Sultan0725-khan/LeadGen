@@ -8,12 +8,12 @@ from app.database import Base
 
 
 class EmailStatus(str, enum.Enum):
-    DRAFTED = "drafted"
-    PENDING_APPROVAL = "pending_approval"
-    APPROVED = "approved"
-    SENT = "sent"
-    FAILED = "failed"
-    SUPPRESSED = "suppressed"
+    DRAFTED = "DRAFTED"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+    APPROVED = "APPROVED"
+    SENT = "SENT"
+    FAILED = "FAILED"
+    SUPPRESSED = "SUPPRESSED"
 
 
 class Email(Base):

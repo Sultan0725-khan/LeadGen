@@ -110,7 +110,8 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   };
 
   const getBadgeClass = (status: string) => {
-    switch (status) {
+    const s = status?.toLowerCase();
+    switch (s) {
       case "sent":
         return "badge-success";
       case "failed":
@@ -420,7 +421,8 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                   </td>
                   <td className="col-status">
                     {(() => {
-                      const status = lead.email_status;
+                      const statusRaw = lead.email_status;
+                      const status = statusRaw?.toLowerCase();
                       const badgeClass = getBadgeClass(status || "");
 
                       if (!status || status === "pending_approval") {
