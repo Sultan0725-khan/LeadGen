@@ -40,7 +40,7 @@ An intelligent, agentic lead generation and enrichment system with automated out
 
 ### 1. Backend Setup
 
-```bash
+````bash
 cd LeadGen/backend
 
 # Create virtual environment
@@ -56,7 +56,25 @@ cp .env.example .env
 
 # Start the server
 uvicorn app.main:app --reload
-```
+```## Salesforce Integration
+
+The LeadGen app can send drafted leads to a Salesforce instance.
+
+### Configuration
+Update `backend/.env` with your Salesforce credentials:
+- `SFDC_CLIENT_ID`: Consumer Key
+- `SFDC_CLIENT_SECRET`: Consumer Secret
+- `SFDC_INSTANCE_URL`: Salesforce Instance URL
+- `SFDC_IS_SANDBOX`: `true` for Playground/Sandbox, `false` for Production
+
+> [!TIP]
+> This integration uses the **OAuth 2.0 Client Credentials Flow**. You do **not** need to provide a username or password in the `.env` file. Ensure that the "Client Credentials Flow" is enabled in your External Client App policies and an execution user is assigned.
+
+### Usage
+1. Go to the **Drafted Emails** tab.
+2. Click **Mark for Mail** to enter selection mode.
+3. Select the leads you want to send.
+4. Click **Send to Salesforce**.
 
 The API will be available at `http://localhost:8000`
 API documentation: `http://localhost:8000/docs`
@@ -71,7 +89,7 @@ npm install
 
 # Start development server
 npm run dev
-```
+````
 
 The dashboard will be available at `http://localhost:5173`
 

@@ -14,6 +14,7 @@ class EmailStatus(str, enum.Enum):
     SENT = "SENT"
     FAILED = "FAILED"
     SUPPRESSED = "SUPPRESSED"
+    SFDX = "SFDX"
 
 
 class Email(Base):

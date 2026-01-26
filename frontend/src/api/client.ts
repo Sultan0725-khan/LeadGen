@@ -30,7 +30,7 @@ export interface Lead {
   longitude?: number;
   confidence_score: number;
   sources: string[];
-  enrichment_data: any;
+  enrichment_data: Record<string, unknown>;
   notes?: string;
   created_at: string;
   email_status?: string;
@@ -172,7 +172,7 @@ export const api = {
     return response.json();
   },
 
-  async sendEmail(emailId: string): Promise<any> {
+  async sendEmail(emailId: string): Promise<{ status: string }> {
     const response = await fetch(`${API_BASE_URL}/emails/${emailId}/send`, {
       method: "POST",
     });
@@ -199,7 +199,7 @@ export const api = {
     return `${API_BASE_URL}/export/run/${runId}/csv`;
   },
 
-  async getLogs(runId: string): Promise<any[]> {
+  async getLogs(runId: string): Promise<Record<string, unknown>[]> {
     const response = await fetch(`${API_BASE_URL}/export/run/${runId}/logs`);
     if (!response.ok) throw new Error("Failed to fetch logs");
     return response.json();
@@ -219,7 +219,7 @@ export const api = {
     return response.json();
   },
 
-  async getProviderStats(providerId: string): Promise<any> {
+  async getProviderStats(providerId: string): Promise<Record<string, unknown>> {
     const response = await fetch(
       `${API_BASE_URL}/stats/providers/${providerId}`,
     );
@@ -227,7 +227,9 @@ export const api = {
     return response.json();
   },
 
-  async refreshProviderStats(providerId: string): Promise<any> {
+  async refreshProviderStats(
+    providerId: string,
+  ): Promise<Record<string, unknown>> {
     const response = await fetch(
       `${API_BASE_URL}/stats/providers/${providerId}/refresh`,
       {
@@ -238,13 +240,34 @@ export const api = {
     return response.json();
   },
 
-  async patch(url: string, data: any): Promise<any> {
+  async patch(
+    url: string,
+    data: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
     const response = await fetch(`${API_BASE_URL}${url}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error(`Failed to patch ${url}`);
+    return response.json();
+  },
+
+  async sendToSalesforce(leadIds: string[]): Promise<{
+    results: {
+      lead_id: string;
+      success: boolean;
+      error?: string;
+      salesforce_id?: string;
+      status?: string;
+    }[];
+  }> {
+    const response = await fetch(`${API_BASE_URL}/salesforce/send-leads`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lead_ids: leadIds }),
+    });
+    if (!response.ok) throw new Error("Failed to send leads to Salesforce");
     return response.json();
   },
 };

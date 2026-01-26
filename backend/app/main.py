@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
 from app.jobs.queue import job_queue
-from app.api import runs, leads, emails, export, providers, statistics
+from app.api import runs, leads, emails, export, providers, statistics, salesforce
 
 # Create FastAPI app
 app = FastAPI(
@@ -27,6 +27,7 @@ app.include_router(emails.router)
 app.include_router(export.router)
 app.include_router(providers.router)
 app.include_router(statistics.router)
+app.include_router(salesforce.router)
 
 
 @app.on_event("startup")

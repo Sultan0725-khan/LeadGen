@@ -134,6 +134,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   const [draftLanguage, setDraftLanguage] = useState<"EN" | "DE">("DE");
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [sendingToSalesforce, setSendingToSalesforce] = useState(false);
   const perPage = 100;
 
   const loadLeads = useCallback(async () => {
@@ -169,12 +170,6 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   useEffect(() => {
     loadLeads();
   }, [loadLeads]);
-
-  const getScoreColor = (score: number) => {
-    if (score >= 0.8) return "score-high";
-    if (score >= 0.5) return "score-medium";
-    return "score-low";
-  };
 
   const handleExport = () => {
     window.open(api.exportCSV(runId), "_blank");
@@ -218,6 +213,34 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
     }
   };
 
+  const handleSendToSalesforce = async () => {
+    if (selectedIds.size === 0) return;
+    setSendingToSalesforce(true);
+    try {
+      const result = await api.sendToSalesforce(Array.from(selectedIds));
+      const successes = result.results.filter((r: any) => r.success).length;
+      const failures = result.results.filter((r: any) => !r.success);
+
+      if (successes > 0) {
+        alert(`Successfully sent ${successes} leads to Salesforce`);
+      }
+      if (failures.length > 0) {
+        alert(
+          `Failed to send ${failures.length} leads. Error: ${failures[0].error}`,
+        );
+      }
+
+      await loadLeads();
+      setSelectionMode(false);
+      setSelectedIds(new Set());
+    } catch (error) {
+      console.error("Failed to send leads to Salesforce:", error);
+      alert("An error occurred while sending leads to Salesforce.");
+    } finally {
+      setSendingToSalesforce(false);
+    }
+  };
+
   const handleSaveLead = async (id: string, updates: Partial<Lead>) => {
     try {
       await api.patch(`/api/leads/${id}`, updates);
@@ -252,6 +275,8 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
         return "badge-info interactive";
       case "approved":
         return "badge-info interactive";
+      case "sfdx":
+        return "badge-success interactive";
       default:
         return "badge-warning";
     }
@@ -428,6 +453,16 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                 {drafting ? "Drafting..." : "Draft Emails"}
               </button>
             )}
+            {selectedIds.size > 0 && activeTab === "drafted" && (
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleSendToSalesforce}
+                disabled={sendingToSalesforce}
+                style={{ marginLeft: "10px", backgroundColor: "#00a1e0" }}
+              >
+                {sendingToSalesforce ? "Sending..." : "Send to Salesforce"}
+              </button>
+            )}
           </>
         ) : (
           <>
@@ -601,6 +636,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                       if (status === "approved") label = "Email Approved";
                       if (status === "sent") label = "Email Send";
                       if (status === "drafted") label = "Drafted";
+                      if (status === "sfdx") label = "In Salesforce";
 
                       return (
                         <span
