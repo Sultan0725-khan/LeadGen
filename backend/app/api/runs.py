@@ -5,6 +5,7 @@ from app.database import get_db
 from app.schemas.run import RunCreate, RunResponse, RunSummary
 from app.models import Run, RunStatus, Lead, Email, Log
 from app.jobs.queue import job_queue
+from app.utils.stats import refresh_run_stats
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 
@@ -49,6 +50,10 @@ def get_run(run_id: str, db: Session = Depends(get_db)):
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
 
+    # Refresh statistics to ensure counters match reality
+    refresh_run_stats(run.id, db)
+    db.refresh(run)
+
     return RunResponse.model_validate(run)
 
 @router.delete("/{run_id}", status_code=204)
@@ -82,3 +87,17 @@ def delete_run(run_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to delete run: {str(e)}")
 
     return None
+
+
+@router.post("/{run_id}/toggle-pin", response_model=RunResponse)
+def toggle_pin(run_id: str, db: Session = Depends(get_db)):
+    """Toggle the pinned status of a run."""
+    run = db.query(Run).filter(Run.id == run_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    run.is_pinned = 1 if not run.is_pinned else 0
+    db.commit()
+    db.refresh(run)
+
+    return RunResponse.model_validate(run)

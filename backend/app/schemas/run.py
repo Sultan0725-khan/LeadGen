@@ -26,8 +26,10 @@ class RunResponse(BaseModel):
     total_emails: int = 0
     total_websites: int = 0
     total_drafts: int = 0
+    total_sent: int = 0
     selected_providers: Optional[List[str]] = None
     provider_limits: Optional[dict] = None
+    is_pinned: bool = False
     error_message: Optional[str] = None
     created_at: datetime
     updated_at: datetime
@@ -47,6 +49,8 @@ class RunSummary(BaseModel):
     total_emails: int = 0
     total_websites: int = 0
     total_drafts: int = 0
+    total_sent: int = 0
+    is_pinned: bool = False
     created_at: datetime
 
     class Config:

@@ -10,6 +10,7 @@ from app.agents.scorer import Scorer
 from app.agents.email_writer import EmailWriter
 from app.agents.email_sender import EmailSender
 from app.services.usage_service import increment_provider_usage
+from app.utils.stats import refresh_run_stats
 import asyncio
 
 
@@ -156,7 +157,7 @@ class AgentOrchestrator:
         self.db.commit()
 
         self.db.commit()
-        self._refresh_run_stats(run)
+        refresh_run_stats(run.id, self.db)
 
         return lead_records
 
@@ -166,7 +167,7 @@ class AgentOrchestrator:
             await self.generate_email_for_lead(lead, lead_data, run)
 
         # Refresh run stats after batch generation
-        self._refresh_run_stats(run)
+        refresh_run_stats(run.id, self.db)
 
     async def generate_email_for_lead(
         self,
@@ -249,7 +250,7 @@ class AgentOrchestrator:
         # Refresh run stats after manual drafting
         run = self.db.query(Run).filter(Run.id == leads[0].run_id).first()
         if run:
-            self._refresh_run_stats(run)
+            refresh_run_stats(run.id, self.db)
 
         return drafted_count
 
@@ -317,34 +318,7 @@ class AgentOrchestrator:
 
         self.db.commit()
 
-    def _refresh_run_stats(self, run: Run):
-        """Update all run-level statistics from current database state."""
-        from app.models.email import Email, EmailStatus
-
-        # Leads count
-        run.total_leads = self.db.query(Lead).filter(Lead.run_id == run.id).count()
-
-        # Website count
-        run.total_websites = self.db.query(Lead).filter(
-            Lead.run_id == run.id,
-            Lead.website != None,
-            Lead.website != ""
-        ).count()
-
-        # Email Found count
-        run.total_emails = self.db.query(Lead).filter(
-            Lead.run_id == run.id,
-            Lead.email != None,
-            Lead.email != ""
-        ).count()
-
-        # Drafts count (Generated non-failed, non-pending emails)
-        run.total_drafts = self.db.query(Email).join(Lead).filter(
-            Lead.run_id == run.id,
-            Email.status.in_([EmailStatus.DRAFTED, EmailStatus.APPROVED, EmailStatus.SENT])
-        ).count()
-
-        self.db.commit()
+    # _refresh_run_stats removed in favor of app.utils.stats.refresh_run_stats
 
     def _log(self, run: Run, level: LogLevel, message: str, lead_id: str = None):
         """Add a log entry."""

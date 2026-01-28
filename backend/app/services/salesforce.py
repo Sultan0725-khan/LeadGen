@@ -23,15 +23,14 @@ class SalesforceService:
         if self.access_token:
             return self.access_token
 
-        # For Client Credentials Flow, using the specific My Domain URL is often REQUIRED
-        # instead of the generic login/test URLs.
-        base_url = self.instance_url.rstrip('/')
-        auth_url = f"{base_url}/services/oauth2/token"
-
-        urls = [auth_url, "https://login.salesforce.com/services/oauth2/token", "https://test.salesforce.com/services/oauth2/token"]
+        # Use My Domain or login/test URLs for authentication
+        base_urls = ["https://login.salesforce.com", "https://test.salesforce.com"]
+        if self.instance_url:
+            base_urls.insert(0, self.instance_url.rstrip('/'))
 
         last_error = "Unknown error"
-        for target_url in urls:
+        for base_url in base_urls:
+            target_url = f"{base_url}/services/oauth2/token"
             payload = {
                 "grant_type": "client_credentials",
                 "client_id": self.client_id,
@@ -57,7 +56,7 @@ class SalesforceService:
 
         raise Exception(f"Salesforce Auth Failed (Client Credentials): {last_error}")
 
-    async def _request(self, method: str, path: str, data: Optional[Dict] = None) -> Dict:
+    async def _request(self, method: str, path: str, data: Optional[Dict] = None, is_retry: bool = False) -> Dict:
         """Make an authenticated request to Salesforce API."""
         token = await self._get_access_token()
 
@@ -69,8 +68,25 @@ class SalesforceService:
             "Content-Type": "application/json"
         }
 
+        # Detailed debug logging for the request
+        print(f"\n>>> SALESFORCE REQUEST: {method} {url}")
+        if data:
+            import json
+            print(f">>> PAYLOAD: {json.dumps(data, indent=2)}")
+
         async with httpx.AsyncClient() as client:
             response = await client.request(method, url, headers=headers, json=data)
+
+            print(f"<<< SALESFORCE RESPONSE: {response.status_code}")
+            if response.status_code >= 400:
+                print(f"<<< ERROR BODY: {response.text}")
+
+            # Handle token expiration
+            if response.status_code == 401 and not is_retry:
+                logger.warning("Salesforce access token expired. Refreshing...")
+                self.access_token = None
+                return await self._request(method, path, data, is_retry=True)
+
             if response.status_code >= 400:
                 logger.error(f"Salesforce request failed ({method} {path}): {response.text}")
                 # Try to extract a meaningful error

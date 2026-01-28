@@ -1,0 +1,59 @@
+# CSV Column Mapping Configuration
+# Each tab can have a different set of columns.
+# format:
+#   header_name: lead_field_or_computed_field
+
+tabs:
+  new:
+    "Business Name": business_name
+    "First Name": first_name
+    "Last Name": last_name
+    "Address": address
+    "Website": website
+    "Email": email
+    "Phone": phone
+    "Confidence Score": confidence_score
+    "Sources": sources
+    "Email Status": email_status
+    "SFDC ID": sfdc_id
+
+  drafted:
+    "Business Name": business_name
+    "First Name": first_name
+    "Last Name": last_name
+    "Address": address
+    "Website": website
+    "Email": email
+    "Phone": phone
+    "Email Subject": email_subject
+    "Email Body": email_body
+    "Email Status": email_status
+    "SFDC ID": sfdc_id
+
+  sent:
+    "Business Name": business_name
+    "First Name": first_name
+    "Last Name": last_name
+    "Address": address
+    "Website": website
+    "Email": email
+    "Phone": phone
+    "Email Subject": email_subject
+    "Email Body": email_body
+    "Email Status": email_status
+    "SFDC ID": sfdc_id
+    "SFDC Status": sfdc_status
+    "Sent At": sent_at
+
+default:
+  "Business Name": business_name
+  "First Name": first_name
+  "Last Name": last_name
+  "Address": address
+  "Website": website
+  "Email": email
+  "Phone": phone
+  "Confidence Score": confidence_score
+  "Sources": sources
+  "Email Status": email_status
+  "Social Links": social_links

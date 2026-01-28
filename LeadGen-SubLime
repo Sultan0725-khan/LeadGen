@@ -65,16 +65,118 @@ lsof -ti:8000 | xargs kill -9
 Provider 
 
 
-Geoapify Places
-	Email: paravanto 
-	API Key: cd0ca40d6c43488d9df9aad05f5624e3
+	Geoapify Places
+		Email: paravanto
+		API Key: cd0ca40d6c43488d9df9aad05f5624e3
 
 
-TomTom 
-	Email: paravanto 
-	Password: LetsgoLeadGen26
-	Name: LeadGenB2B 
-	API Key: xrbrR1swSsYu3DLY5711raeU1vpFi8w8
+	TomTom
+		Email: paravanto89@gmail.com
+		Password: LetsgoLeadGen26
+		Name: LeadGenB2B
+		API Key: xrbrR1swSsYu3DLY5711raeU1vpFi8w8
 
 
+
+------------------------------------------------------------------
+
+Prompt 2
+
+
+	2. nimm die deutsch uhrzeit beim setzetn der Created TimeStemp
+	3. In der Lead Tabelle soll es ein button geben der für die gefunden leads eine email erstellt dafür soll es eine checkbox rendern nachdem auf dem Button "Mark for Mail" geklickt wird sollen die boxen am anfang der zeile gezeigt werden und nach dem midestens eine ausgewählt wurde soll ein Button "Draft Email" erscheinnen -
+	Auswahl geht an Email-Writer Agent via Ollama Text erstellt
+	4. Nach dem Draften soll in der Spalte Email Status stehen "Email Created" - und beim anklicken des badge im der Spalte für jedes Lead soll eine hover over dynamischer container öffnen - Der die erstellte email vom email-write anzeigt
+	5. im container sethen Button "Send Email" oder "Configure Email" und der user kann den text direkt ändern im EmailDarftHoverContainer :)
+
+
+--------------------------------------------------------------------
+
+Promt 3 Ollama - Email Text Creation
+
+	- Ollama auf rechner installieren -> https://ollama.com/download/mac
+
+	- CLI -> ollama pull llama2
+
+	- Standard-URL http://127.0.0.1:11434 (umgestellt in der config.py als auch in der .env) -> Ollama is running
+
+	Frage:
+
+	- wie teste ich Ollama Email-Writer Agent das texte erstellt werden?
+--------------------------------------------------------------------
+
+Promt 4 App Enhancemet
+	- 2-Column Grid für Input Field Location und Category nebeneinander
+	- Select all Email Button nach Mark For Mail und beim renderen des Draft Emails Button
+	- Einen Process Balken beim erstellen der Email fortschritts
+	- Auf den einzelen Run Seiten sollen im Kopf die Karten die Statistiken des Runs zeigen und nicht die gesamt stastiken - also in dem run gefunden Leads, Emails und Websites
+	- passe die breit der ersten Spalte " Bussiness Name" an - verkleinere sie
+
+-----------------------------------------------------------------------
+
+
+python3 ../scripts/test_email.py paravanto89@gmail.com
+
+	Sending test email to: paravanto89@gmail.com
+	Failed to send email: SMTP Authentication Failed: Check your username/password. For Zoho/Gmail, ensure you use an 'App Password' if 2FA is enabled. Details: (535, 'Authentication Failed')
+	❌ Failed to send email: Failed to send email: SMTP Authentication Failed: Check your username/password. For Zoho/Gmail, ensure you use an 'App Password' if 2FA is enabled. Details: (535, 'Authentication Failed')
+
+
+----------------------------------------------------------------------
+
+Promt 4 App Enhancemet
+
+	- erstelle pro record ein button zum bearbeiten des leads um daten zu editieren -> Stift symbol am am anfang unter der Zeilennummerierung ist etwas platz im UI (siehe Bild)
+	- entferne die spalte score, source und email status
+	- addiere zwei spalten eine für social media links (aus leadGen.db als quelle in Spalte K), und eine spalte für ein notiz input feld.
+	- sortiere nach die liste DESC von Drafted Emails damit der neueste lead von New Leads der rüberkommt immer oben in der liste steht
+---------------------------------------------------------
+
+Promt 5 App Enhancemet
+
+ New Leads Tabelle:
+ - Pen symbol nur ein svg icon (selber hintergrund wir page) und etwas schöner - in zweite spalte legen
+ - erste spalte hat nummerierung und checkbox
+ - check box können immer eingeblendet bleiben
+ - dann brauchen wir den button mark for mail nicht mehr und ersetzen nur mit Select All Button
+ - nach dem auswählen von mindestens einem record soll der Button Darft EMails angezeigt werden
+ - dritte spalte ist Sozial Media (Icon von der App bitte wie IG, FB, TikTok etc etwas schöner :)
+ - vierte spalte Info: compound liste Werten für :
+   Email-Adresse
+   Telefon
+   Adresse
+  - entfern somit die Spalte Adress und Notes
+  - fünfte spalte ist Status
+ - Note spalte ersetzen mit Email und Website und Telefon nummer als liste in spalte
+
+Drafted Emails:
+	- Der Button sol heißen Re-Draft Email statt Draft Emails
+	- Ein neuer Button Send Lead to SFDC
+	- dieser soll einen callout nach Salesforce machen und die payload soll einen Lead erstellen oder updaten
+
+--------------------------------------------------------------------
+
+New Leads Tabelle:
+
+	- 1st erste spalte ist die checkbox und in der zweiten spalte die nummerierung so wie in tabllen header eingestellt nun
+	- richte die spalten breite besser an ann dass sie die window breite
+
+------------------------------------------------------------------------------------------------
+
+Prompt 6
+
+	1. bitte keine check box in der 0 zeile in tabellen kopf diese zeile solllte nicht auswählbar sein (entfere die checkbox)
+	2. Status Badge "No Draft" in runden design einheitlich für alle status werte
+	3. mach home button breiter und ordne ihn rechts an
+	4. Draft email buttons und Re-Draft Buttons laufen nicht in den zeilen nur der button oben
+	5. Feldwerte von Status und Action Spalten sollen links angeordenet sein
+	6. Drafted Email modal für email soll einen neuen button bekommen der "Re-Draft" heißt und ollama aufruft um die email neu zu schreiben. Plus ein Input text feld (neuer container unter Message body) der als Prompt mitübertragen werden zu ollama für das re-draften der email
+	7. Drafted Email soll den button Send-Email nennen statt Re-Draft und der Button checkt ob eine email adresse existiert für den lead bevor lossenden und nach dem erfogreichem versenden soll der lead nach salesfrce gesendet werden.
+	8. Mach einen Dritten Tab "Sent Emails" der die Leads anschließend rüber schiebt. Tabelle Format ist:
+	1. Nummerierung (keine checkbox)
+	2. Business Name
+	3. Info
+	4. Social Media
+	5. Status Email -> Send (success, sonst Failed als status wert)
+	6. Status Salesforce -> Send (success, sonst Failed als status wert)
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "../api/client";
 import type { CreateRunRequest, Provider } from "../api/client";
 import "./RunForm.css";
@@ -23,15 +23,7 @@ export function RunForm({ onRunCreated }: RunFormProps) {
   );
   const [loadingProviders, setLoadingProviders] = useState(true);
 
-  // Load providers on mount and refresh periodically
-  useEffect(() => {
-    loadProviders();
-    // Refresh providers every 60 seconds to update quotas
-    const interval = setInterval(loadProviders, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadProviders = async () => {
+  const loadProviders = useCallback(async () => {
     try {
       const data = await api.getProviders();
       setProviders(data);
@@ -55,7 +47,15 @@ export function RunForm({ onRunCreated }: RunFormProps) {
     } finally {
       setLoadingProviders(false);
     }
-  };
+  }, [providerLimits]);
+
+  // Load providers on mount and refresh periodically
+  useEffect(() => {
+    loadProviders();
+    // Refresh providers every 60 seconds to update quotas
+    const interval = setInterval(loadProviders, 60000);
+    return () => clearInterval(interval);
+  }, [loadProviders]);
 
   const toggleProvider = (providerId: string) => {
     setSelectedProviders((prev) =>
@@ -95,8 +95,10 @@ export function RunForm({ onRunCreated }: RunFormProps) {
 
       // Notify parent
       onRunCreated();
-    } catch (err: any) {
-      setError(err.message || "Failed to create run");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to create run";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

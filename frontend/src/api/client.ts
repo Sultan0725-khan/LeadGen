@@ -11,11 +11,13 @@ export interface Run {
   total_emails?: number;
   total_websites?: number;
   total_drafts?: number;
+  total_sent?: number;
   selected_providers?: string[];
   provider_limits?: Record<string, number>;
   error_message?: string;
   created_at: string;
   updated_at: string;
+  is_pinned: boolean;
   completed_at?: string;
 }
 
@@ -49,6 +51,7 @@ export interface Email {
   subject: string;
   body: string;
   language: string;
+  recipient_email?: string;
   generated_at: string;
   sent_at?: string;
   error_message?: string;
@@ -119,6 +122,13 @@ export const api = {
     });
     if (!response.ok) throw new Error("Failed to delete run");
   },
+  async togglePinRun(runId: string): Promise<Run> {
+    const response = await fetch(`${API_BASE_URL}/runs/${runId}/toggle-pin`, {
+      method: "POST",
+    });
+    if (!response.ok) throw new Error("Failed to toggle pin");
+    return response.json();
+  },
 
   // Leads
   async getLeads(
@@ -168,7 +178,7 @@ export const api = {
 
   async updateEmail(
     emailId: string,
-    data: { subject: string; body: string },
+    data: { subject: string; body: string; recipient_email?: string },
   ): Promise<Email> {
     const response = await fetch(`${API_BASE_URL}/emails/${emailId}`, {
       method: "PUT",
@@ -214,8 +224,12 @@ export const api = {
   },
 
   // Export
-  exportCSV(runId: string): string {
-    return `${API_BASE_URL}/export/run/${runId}/csv`;
+  exportCSV(runId: string, emailStatus?: string): string {
+    const url = new URL(`${API_BASE_URL}/export/run/${runId}/csv`);
+    if (emailStatus) {
+      url.searchParams.append("email_status", emailStatus);
+    }
+    return url.toString();
   },
 
   async getLogs(runId: string): Promise<Record<string, unknown>[]> {
@@ -272,6 +286,18 @@ export const api = {
     return response.json();
   },
 
+  async sendBulkEmails(leadIds: string[]): Promise<{
+    status: string;
+    results: { lead_id: string; success: boolean; error?: string }[];
+  }> {
+    const response = await fetch(`${API_BASE_URL}/emails/send-bulk`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lead_ids: leadIds }),
+    });
+    if (!response.ok) throw new Error("Failed to send bulk emails");
+    return response.json();
+  },
   async sendToSalesforce(leadIds: string[]): Promise<{
     results: {
       lead_id: string;

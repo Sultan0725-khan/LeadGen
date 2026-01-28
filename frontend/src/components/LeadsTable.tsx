@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../api/client";
 import type { Lead, Run } from "../api/client";
 import { EmailDraftModal } from "./EmailDraftModal";
@@ -28,6 +29,24 @@ function LeadEditModal({ lead, onSave, onClose }: LeadEditModalProps) {
   });
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -41,8 +60,8 @@ function LeadEditModal({ lead, onSave, onClose }: LeadEditModalProps) {
     }
   };
 
-  return (
-    <div className="modal-overlay">
+  return createPortal(
+    <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-content card" style={{ maxWidth: "500px" }}>
         <h3>Edit Lead</h3>
         <form onSubmit={handleSubmit}>
@@ -137,7 +156,8 @@ function LeadEditModal({ lead, onSave, onClose }: LeadEditModalProps) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -230,7 +250,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   ]);
 
   const handleExport = () => {
-    window.open(api.exportCSV(runId), "_blank");
+    window.open(api.exportCSV(runId, activeTab), "_blank");
   };
 
   const toggleSelectAll = () => {
@@ -339,26 +359,6 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
     }
   };
 
-  const getBadgeClass = (status: string) => {
-    const s = status?.toLowerCase();
-    switch (s) {
-      case "sent":
-        return "badge-success";
-      case "failed":
-        return "badge-error";
-      case "pending_approval":
-        return "badge-warning";
-      case "drafted":
-        return "badge-info interactive";
-      case "approved":
-        return "badge-info interactive";
-      case "sfdx":
-        return "badge-success interactive";
-      default:
-        return "badge-warning";
-    }
-  };
-
   if (loading) {
     return (
       <div
@@ -447,15 +447,21 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
             onClick={() => {
               setActiveTab("new");
               setSearchQuery("");
+              setSelectedIds(new Set());
             }}
           >
-            New Leads ({(run?.total_leads || 0) - (run?.total_drafts || 0)})
+            New Leads (
+            {(run?.total_leads || 0) -
+              (run?.total_drafts || 0) -
+              (run?.total_sent || 0)}
+            )
           </button>
           <button
             className={`tab-btn ${activeTab === "drafted" ? "active" : ""}`}
             onClick={() => {
               setActiveTab("drafted");
               setSearchQuery("");
+              setSelectedIds(new Set());
             }}
           >
             Drafted Emails ({run?.total_drafts || 0})
@@ -465,12 +471,26 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
             onClick={() => {
               setActiveTab("sent");
               setSearchQuery("");
+              setSelectedIds(new Set());
             }}
           >
-            Sent Emails
+            Sent Emails ({run?.total_sent || 0})
           </button>
         </div>
-        <button className="btn btn-outline btn-home-wide" onClick={onClose}>
+        <button className="btn btn-home-colorful" onClick={onClose}>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
           Home
         </button>
       </div>
@@ -594,7 +614,45 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                   disabled={sendingToSalesforce}
                   style={{ marginLeft: "10px", backgroundColor: "#00a1e0" }}
                 >
-                  {sendingToSalesforce ? "Sending..." : "Send Lead to SFDC"}
+                  {sendingToSalesforce
+                    ? "Sending..."
+                    : "Send Lead only to SFDC"}
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={async () => {
+                    if (selectedIds.size === 0) return;
+                    setSendingToSalesforce(true); // Reusing this loading state or adding a new one? Let's use it for now as it prevents other actions
+                    try {
+                      const result = await api.sendBulkEmails(
+                        Array.from(selectedIds),
+                      );
+                      const successes = result.results.filter(
+                        (r) => r.success,
+                      ).length;
+                      const failures = result.results.filter((r) => !r.success);
+
+                      if (successes > 0) {
+                        showToast(`Successfully sent ${successes} emails!`);
+                      }
+                      if (failures.length > 0) {
+                        alert(
+                          `Failed to send ${failures.length} emails. Error: ${failures[0].error}`,
+                        );
+                      }
+                      await loadLeads();
+                      setSelectedIds(new Set());
+                    } catch (error) {
+                      console.error("Failed to send bulk emails:", error);
+                      alert("An error occurred while sending emails.");
+                    } finally {
+                      setSendingToSalesforce(false);
+                    }
+                  }}
+                  disabled={sendingToSalesforce}
+                  style={{ marginLeft: "10px", backgroundColor: "#22c55e" }}
+                >
+                  {sendingToSalesforce ? "Sending..." : "Send Email"}
                 </button>
               </>
             )}
@@ -605,7 +663,12 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
           onClick={handleExport}
           style={{ marginLeft: selectedIds.size > 0 ? "10px" : "0" }}
         >
-          Export CSV
+          Export CSV -{" "}
+          {activeTab === "new"
+            ? "New Leads"
+            : activeTab === "drafted"
+              ? "Drafted Emails"
+              : "Sent Emails"}
         </button>
       </div>
 
@@ -629,12 +692,17 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                 <th className="col-business">Business Name</th>
                 <th className="col-info">Info</th>
                 <th className="col-social">Social Media</th>
-                {activeTab !== "sent" && <th className="col-edit">Edit</th>}
-                <th className="col-status-left">
-                  {activeTab === "sent" ? "Status Email" : "Status"}
-                </th>
+                {activeTab !== "sent" && (
+                  <th className="col-edit">
+                    {activeTab === "new" ? "Edit Kontakt" : "AI EMail"}
+                  </th>
+                )}
                 <th className="col-actions-left">
-                  {activeTab === "sent" ? "Status Salesforce" : "Action"}
+                  {activeTab === "sent"
+                    ? "Status Salesforce"
+                    : activeTab === "new"
+                      ? "AI Draft"
+                      : "Send Mail & SFDC"}
                 </th>
               </tr>
             </thead>
@@ -746,135 +814,107 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                   </td>
                   {activeTab !== "sent" && (
                     <td className="col-edit">
-                      <button
-                        className="btn-edit"
-                        onClick={() => setEditingLead(lead)}
-                        title="Edit Lead"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                      {activeTab === "new" ? (
+                        <button
+                          className="btn-edit"
+                          onClick={() => setEditingLead(lead)}
+                          title="Edit Lead"
                         >
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </button>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <button
+                          className="btn-edit"
+                          onClick={() =>
+                            lead.email_id && setSelectedEmailId(lead.email_id)
+                          }
+                          title="View Email"
+                          style={{
+                            width: "auto",
+                            padding: "0 12px",
+                            fontSize: "0.8rem",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          View E-Mail
+                        </button>
+                      )}
                     </td>
                   )}
                   {activeTab !== "sent" ? (
-                    <>
-                      <td className="col-status-left">
-                        {(() => {
-                          const statusRaw = lead.email_status;
-                          const status = statusRaw?.toLowerCase();
-                          const badgeClass = getBadgeClass(status || "");
-
-                          if (!status || status === "pending_approval") {
-                            return (
-                              <span className={`badge ${badgeClass}`}>
-                                No Draft
-                              </span>
-                            );
-                          }
-
-                          let label = status.replace("_", " ");
-                          if (status === "approved") label = "Approved";
-                          if (status === "sent") label = "Email Sent";
-                          if (status === "drafted") label = "Drafted";
-                          if (status === "sfdx") label = "In Salesforce";
-
-                          return (
-                            <span
-                              className={`badge ${badgeClass}`}
-                              onClick={() =>
-                                lead.email_id &&
-                                setSelectedEmailId(lead.email_id)
-                              }
-                              title={
-                                ["drafted", "approved"].includes(status)
-                                  ? "Click to edit/send"
-                                  : ""
-                              }
-                            >
-                              {status === "drafted" ? "View Email" : label}
-                            </span>
-                          );
-                        })()}
-                      </td>
-                      <td className="col-actions-left">
-                        <button
-                          className="btn btn-primary btn-small"
-                          onClick={async () => {
-                            if (activeTab === "new") {
-                              setLoadingIds((prev) =>
-                                new Set(prev).add(lead.id),
-                              );
-                              try {
-                                await api.draftEmails([lead.id], draftLanguage);
-                                loadLeads(false);
-                              } catch (err) {
-                                console.error("Draft error:", err);
-                              } finally {
-                                setLoadingIds((prev) => {
-                                  const next = new Set(prev);
-                                  next.delete(lead.id);
-                                  return next;
-                                });
-                              }
-                            } else {
-                              // Drafted tab - Send Email
-                              if (!lead.email_id) return;
-                              setLoadingIds((prev) =>
-                                new Set(prev).add(lead.id),
-                              );
-                              try {
-                                const result = await api.sendEmail(
-                                  lead.email_id,
-                                );
-                                if (result.status === "success") {
-                                  loadLeads(false);
-                                  showToast(
-                                    "Email and Salesforce sync successful!",
-                                  );
-                                } else {
-                                  alert(`Send failed: ${result.error}`);
-                                }
-                              } catch (err: unknown) {
-                                console.error("Send error:", err);
-                                const errorMessage =
-                                  err instanceof Error
-                                    ? err.message
-                                    : "Check terminal logs";
-                                alert(`Send error: ${errorMessage}`);
-                              } finally {
-                                setLoadingIds((prev) => {
-                                  const next = new Set(prev);
-                                  next.delete(lead.id);
-                                  return next;
-                                });
-                              }
+                    <td className="col-actions-left">
+                      <button
+                        className="btn btn-primary btn-small"
+                        onClick={async () => {
+                          if (activeTab === "new") {
+                            setLoadingIds((prev) => new Set(prev).add(lead.id));
+                            try {
+                              await api.draftEmails([lead.id], draftLanguage);
+                              loadLeads(false);
+                            } catch (err) {
+                              console.error("Draft error:", err);
+                            } finally {
+                              setLoadingIds((prev) => {
+                                const next = new Set(prev);
+                                next.delete(lead.id);
+                                return next;
+                              });
                             }
-                          }}
-                          disabled={loadingIds.has(lead.id)}
-                          style={{ padding: "4px 8px", fontSize: "0.75rem" }}
-                        >
-                          {loadingIds.has(lead.id)
-                            ? "mhh mhh ing..."
-                            : activeTab === "new"
-                              ? "Draft Email"
-                              : "Send Email"}
-                        </button>
-                      </td>
-                    </>
+                          } else {
+                            // Drafted tab - Send Email
+                            if (!lead.email_id) return;
+                            setLoadingIds((prev) => new Set(prev).add(lead.id));
+                            try {
+                              const result = await api.sendEmail(lead.email_id);
+                              if (result.status === "success") {
+                                loadLeads(false);
+                                showToast(
+                                  "Email and Salesforce sync successful!",
+                                );
+                              } else {
+                                alert(`Send failed: ${result.error}`);
+                              }
+                            } catch (err: unknown) {
+                              console.error("Send error:", err);
+                              const errorMessage =
+                                err instanceof Error
+                                  ? err.message
+                                  : "Check terminal logs";
+                              alert(`Send error: ${errorMessage}`);
+                            } finally {
+                              setLoadingIds((prev) => {
+                                const next = new Set(prev);
+                                next.delete(lead.id);
+                                return next;
+                              });
+                            }
+                          }
+                        }}
+                        disabled={loadingIds.has(lead.id)}
+                      >
+                        {loadingIds.has(lead.id)
+                          ? "mhh mhh ing..."
+                          : activeTab === "new"
+                            ? "Create Email"
+                            : "Send Email"}
+                      </button>
+                      {/* Removed extra View Email button here as requested in previous instruction but just to be sure it is gone */}
+                    </td>
                   ) : (
                     <>
-                      <td className="col-status-left">
+                      <td className="col-actions-left">
                         <div
                           style={{
                             display: "flex",
@@ -884,7 +924,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                           }}
                         >
                           <span className={`badge badge-success`}>
-                            Send (success)
+                            Email Sent
                           </span>
                           <button
                             className="btn btn-outline btn-xs"
@@ -899,7 +939,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                           </button>
                         </div>
                       </td>
-                      <td className="col-status-left">
+                      <td className="col-actions-left">
                         <div
                           style={{
                             display: "flex",
@@ -912,7 +952,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                             className={`badge ${lead.sfdc_status === "success" ? "badge-success" : "badge-warning"}`}
                           >
                             {lead.sfdc_status === "success"
-                              ? "Send (success)"
+                              ? "SFDC Sync OK"
                               : lead.sfdc_status === "failed"
                                 ? "Failed"
                                 : "Pending"}
@@ -923,9 +963,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                             onClick={() => handleResendSingleSFDC(lead.id)}
                             disabled={sendingToSalesforce}
                           >
-                            {sendingToSalesforce
-                              ? "..."
-                              : "Re-send to Salesforce"}
+                            {sendingToSalesforce ? "..." : "Re-send to SFDC"}
                           </button>
                         </div>
                       </td>

@@ -13,6 +13,7 @@ class EmailResponse(BaseModel):
     body: str
     language: str
     generated_at: datetime
+    recipient_email: Optional[str] = None
     sent_at: Optional[datetime] = None
     error_message: Optional[str] = None
 
@@ -30,6 +31,7 @@ class EmailUpdateRequest(BaseModel):
     """Request to update an email draft."""
     subject: str
     body: str
+    recipient_email: Optional[str] = None
 
 
 class EmailRedraftRequest(BaseModel):

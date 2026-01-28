@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../api/client";
 import type { Email } from "../api/client";
 import "./EmailDraftModal.css";
@@ -40,6 +41,34 @@ export function EmailDraftModal({
     loadEmail();
   }, [loadEmail]);
 
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    return `${day}.${month}.${year} ${hours}:${minutes}h`;
+  };
+
   const handleSave = async () => {
     if (!email) return;
     setSaving(true);
@@ -48,6 +77,7 @@ export function EmailDraftModal({
       await api.updateEmail(emailId, {
         subject: email.subject,
         body: email.body,
+        recipient_email: email.recipient_email,
       });
       setPersistedEmail(email);
       if (onUpdate) onUpdate();
@@ -86,7 +116,8 @@ export function EmailDraftModal({
     // Check if user has manual unsaved changes
     if (
       email.subject !== persistedEmail?.subject ||
-      email.body !== persistedEmail?.body
+      email.body !== persistedEmail?.body ||
+      email.recipient_email !== persistedEmail?.recipient_email
     ) {
       setError("Please Save Draft before sending.");
       return;
@@ -115,17 +146,25 @@ export function EmailDraftModal({
   };
 
   if (loading)
-    return (
-      <div className="modal-overlay">
+    return createPortal(
+      <div className="modal-overlay" onClick={handleOverlayClick}>
         <div className="spinner"></div>
-      </div>
+      </div>,
+      document.body,
     );
 
-  return (
-    <div className="modal-overlay">
+  return createPortal(
+    <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-content email-modal">
         <div className="modal-header">
-          <h2 className="text-gradient">Edit Email Draft</h2>
+          <div>
+            <h2 className="text-gradient">Edit Email Draft</h2>
+            {email?.generated_at && (
+              <span className="timestamp-text">
+                Created: {formatDate(email.generated_at)}
+              </span>
+            )}
+          </div>
           <button className="close-btn" onClick={onClose}>
             &times;
           </button>
@@ -141,6 +180,21 @@ export function EmailDraftModal({
         {error && <div className="error-message">{error}</div>}
 
         <div className="modal-body">
+          <div className="form-group">
+            <label>To:</label>
+            <input
+              type="email"
+              value={email?.recipient_email || ""}
+              onChange={(e) =>
+                setEmail((prev) =>
+                  prev ? { ...prev, recipient_email: e.target.value } : null,
+                )
+              }
+              className="input-field"
+              placeholder="recipient@example.com"
+            />
+          </div>
+
           <div className="form-group">
             <label>Subject</label>
             <input
@@ -217,6 +271,7 @@ export function EmailDraftModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -25,6 +25,7 @@ class Run(Base):
     require_approval = Column(Integer, default=0)  # SQLite boolean
     dry_run = Column(Integer, default=0)  # SQLite boolean
     total_leads = Column(Integer, default=0)
+    is_pinned = Column(Integer, default=0)  # SQLite boolean
 
     # Provider selection and limits
     selected_providers = Column(JSON, default=list)  # List of provider IDs used
@@ -34,6 +35,7 @@ class Run(Base):
     total_emails = Column(Integer, default=0)  # Count of leads with email
     total_websites = Column(Integer, default=0)  # Count of leads with website
     total_drafts = Column(Integer, default=0)   # Count of leads with an email draft
+    total_sent = Column(Integer, default=0)     # Count of leads with a sent email
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime, default=get_german_now)
     updated_at = Column(DateTime, default=get_german_now, onupdate=get_german_now)

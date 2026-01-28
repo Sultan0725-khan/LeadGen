@@ -45,6 +45,8 @@ cd LeadGen/backend
 
 # Create virtual environment
 python -m venv venv
+
+#################### Activate the virtual environment ####################
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
@@ -54,7 +56,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env and add your API keys
 
-# Start the server
+#################### Start the server ####################
 uvicorn app.main:app --reload
 ```## Salesforce Integration
 
@@ -87,7 +89,7 @@ cd LeadGen/frontend
 # Install dependencies
 npm install
 
-# Start development server
+#################### Start development server ####################
 npm run dev
 ````
 

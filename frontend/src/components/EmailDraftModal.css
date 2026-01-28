@@ -8,9 +8,10 @@
   backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   z-index: 1000;
   padding: 20px;
+  padding-top: 5vh;
 }
 
 .modal-content {
@@ -48,6 +49,14 @@
   margin-bottom: var(--spacing-md);
   padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.timestamp-text {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+  margin-top: 4px;
+  display: block;
 }
 
 .close-btn {
