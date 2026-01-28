@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { api } from "../api/client";
-import type { Lead } from "../api/client";
+import type { Lead, Run } from "../api/client";
 import { EmailDraftModal } from "./EmailDraftModal";
 import "./LeadsTable.css";
 
@@ -18,6 +18,8 @@ interface LeadEditModalProps {
 function LeadEditModal({ lead, onSave, onClose }: LeadEditModalProps) {
   const [formData, setFormData] = useState({
     business_name: lead.business_name,
+    first_name: lead.first_name || "",
+    last_name: lead.last_name || "",
     email: lead.email || "",
     phone: lead.phone || "",
     website: lead.website || "",
@@ -53,6 +55,28 @@ function LeadEditModal({ lead, onSave, onClose }: LeadEditModalProps) {
                 setFormData({ ...formData, business_name: e.target.value })
               }
             />
+          </div>
+          <div style={{ display: "flex", gap: "1rem" }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>First Name</label>
+              <input
+                type="text"
+                value={formData.first_name}
+                onChange={(e) =>
+                  setFormData({ ...formData, first_name: e.target.value })
+                }
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Last Name</label>
+              <input
+                type="text"
+                value={formData.last_name}
+                onChange={(e) =>
+                  setFormData({ ...formData, last_name: e.target.value })
+                }
+              />
+            </div>
           </div>
           <div className="form-group">
             <label>Email</label>
@@ -120,13 +144,13 @@ function LeadEditModal({ lead, onSave, onClose }: LeadEditModalProps) {
 export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [drafting, setDrafting] = useState(false);
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
+  const [drafting, setDrafting] = useState(false); // Used for bulk drafting container
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [run, setRun] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"new" | "drafted">("new");
+  const [run, setRun] = useState<Run | null>(null);
+  const [activeTab, setActiveTab] = useState<"new" | "drafted" | "sent">("new");
   const [filterHasEmail, setFilterHasEmail] = useState<boolean | null>(null);
   const [filterHasWebsite, setFilterHasWebsite] = useState<boolean | null>(
     null,
@@ -135,49 +159,78 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [sendingToSalesforce, setSendingToSalesforce] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({
+    message: "",
+    visible: false,
+  });
   const perPage = 100;
 
-  const loadLeads = useCallback(async () => {
-    try {
-      setLoading(true);
-      // Fetch leads with specific filters based on dashboard/tab state
-      const filters = {
-        has_email: filterHasEmail ?? undefined,
-        has_website: filterHasWebsite ?? undefined,
-        email_status: activeTab === "new" ? "new" : "drafted",
-      };
+  const loadLeads = useCallback(
+    async (showLoading = true) => {
+      try {
+        if (showLoading) setLoading(true);
+        // Fetch leads with specific filters based on dashboard/tab state
+        const filters = {
+          has_email: filterHasEmail ?? undefined,
+          has_website: filterHasWebsite ?? undefined,
+          email_status: activeTab,
+          q: debouncedSearch || undefined,
+        };
 
-      const data = await api.getLeads(runId, page, perPage, filters);
+        const data = await api.getLeads(runId, page, perPage, filters);
 
-      setLeads(data.leads);
-      setTotalCount(data.total);
+        setLeads(data.leads);
+        setTotalCount(data.total);
 
-      // Load run stats
-      const runData = await api.getRun(runId);
-      setRun(runData);
-    } catch (err) {
-      console.error("Failed to load leads:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [runId, activeTab, filterHasEmail, filterHasWebsite, page]);
+        // Load run stats
+        const runData = await api.getRun(runId);
+        setRun(runData);
+      } catch (err) {
+        console.error("Failed to load leads:", err);
+      } finally {
+        if (showLoading) setLoading(false);
+      }
+    },
+    [runId, activeTab, filterHasEmail, filterHasWebsite, page, debouncedSearch],
+  );
 
-  // Reset page when switching tabs or filters
   useEffect(() => {
-    setPage(1);
-  }, [activeTab, filterHasEmail, filterHasWebsite]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const showToast = (message: string) => {
+    setToast({ message, visible: true });
+    setTimeout(() => {
+      setToast((prev) => ({ ...prev, visible: false }));
+    }, 3000);
+  };
 
   useEffect(() => {
-    loadLeads();
-  }, [loadLeads]);
+    // Initial load and tab switches show full loading spinner
+    loadLeads(true);
+  }, [runId, activeTab, loadLeads]);
+
+  useEffect(() => {
+    // Filter toggles and pagination use silent reload to prevent UI jump
+    if (loading) return;
+    loadLeads(false);
+  }, [
+    filterHasEmail,
+    filterHasWebsite,
+    page,
+    loadLeads,
+    loading,
+    debouncedSearch,
+  ]);
 
   const handleExport = () => {
     window.open(api.exportCSV(runId), "_blank");
-  };
-
-  const toggleSelectionMode = () => {
-    setSelectionMode(!selectionMode);
-    setSelectedIds(new Set());
   };
 
   const toggleSelectAll = () => {
@@ -198,13 +251,47 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
     setSelectedIds(newSelected);
   };
 
+  const handleResendSingleEmail = async (emailId: string) => {
+    try {
+      setDrafting(true);
+      const result = await api.sendEmail(emailId);
+      if (result.status === "success") {
+        loadLeads(false);
+      } else {
+        alert(`Failed to re-send email: ${result.error}`);
+      }
+    } catch (err) {
+      console.error("Resend error:", err);
+    } finally {
+      setDrafting(false);
+    }
+  };
+
+  const handleResendSingleSFDC = async (leadId: string) => {
+    setSendingToSalesforce(true);
+    try {
+      const result = await api.sendToSalesforce([leadId]);
+      if (result.results[0].success) {
+        loadLeads(false);
+      } else {
+        alert(`Failed to send to Salesforce: ${result.results[0].error}`);
+      }
+    } catch (error) {
+      console.error("SFDC Resend error:", error);
+    } finally {
+      setSendingToSalesforce(false);
+    }
+  };
+
   const handleDraftSelected = async () => {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0) {
+      showToast("Please select at least one checkbox or lead");
+      return;
+    }
     setDrafting(true);
     try {
       await api.draftEmails(Array.from(selectedIds), draftLanguage);
       await loadLeads();
-      setSelectionMode(false);
       setSelectedIds(new Set());
     } catch (error) {
       console.error("Failed to draft emails:", error);
@@ -218,8 +305,8 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
     setSendingToSalesforce(true);
     try {
       const result = await api.sendToSalesforce(Array.from(selectedIds));
-      const successes = result.results.filter((r: any) => r.success).length;
-      const failures = result.results.filter((r: any) => !r.success);
+      const successes = result.results.filter((r) => r.success).length;
+      const failures = result.results.filter((r) => !r.success);
 
       if (successes > 0) {
         alert(`Successfully sent ${successes} leads to Salesforce`);
@@ -231,7 +318,6 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
       }
 
       await loadLeads();
-      setSelectionMode(false);
       setSelectedIds(new Set());
     } catch (error) {
       console.error("Failed to send leads to Salesforce:", error);
@@ -243,22 +329,13 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
 
   const handleSaveLead = async (id: string, updates: Partial<Lead>) => {
     try {
-      await api.patch(`/api/leads/${id}`, updates);
+      await api.patch(`/leads/${id}`, updates);
       // Refresh local state
       setLeads((prev) =>
         prev.map((l) => (l.id === id ? { ...l, ...updates } : l)),
       );
     } catch (error) {
       console.error("Error updating lead:", error);
-    }
-  };
-
-  const handleUpdateNote = async (id: string, notes: string) => {
-    try {
-      await api.patch(`/api/leads/${id}`, { notes });
-      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, notes } : l)));
-    } catch (error) {
-      console.error("Error updating note:", error);
     }
   };
 
@@ -360,32 +437,90 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
       )}
 
       {/* Tabs */}
-      <div className="leads-tabs">
-        <button
-          className={`tab-btn ${activeTab === "new" ? "active" : ""}`}
-          onClick={() => setActiveTab("new")}
-        >
-          New Leads ({(run?.total_leads || 0) - (run?.total_drafts || 0)})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "drafted" ? "active" : ""}`}
-          onClick={() => setActiveTab("drafted")}
-        >
-          Drafted Emails ({run?.total_drafts || 0})
+      <div
+        className="leads-tabs-container"
+        style={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}
+      >
+        <div className="leads-tabs">
+          <button
+            className={`tab-btn ${activeTab === "new" ? "active" : ""}`}
+            onClick={() => {
+              setActiveTab("new");
+              setSearchQuery("");
+            }}
+          >
+            New Leads ({(run?.total_leads || 0) - (run?.total_drafts || 0)})
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "drafted" ? "active" : ""}`}
+            onClick={() => {
+              setActiveTab("drafted");
+              setSearchQuery("");
+            }}
+          >
+            Drafted Emails ({run?.total_drafts || 0})
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "sent" ? "active" : ""}`}
+            onClick={() => {
+              setActiveTab("sent");
+              setSearchQuery("");
+            }}
+          >
+            Sent Emails
+          </button>
+        </div>
+        <button className="btn btn-outline btn-home-wide" onClick={onClose}>
+          Home
         </button>
       </div>
 
       {/* Advanced Filters */}
       <div className="filter-controls">
-        {selectionMode && (
+        {activeTab === "sent" && (
+          <div className="search-bar" style={{ marginRight: "1rem" }}>
+            <input
+              type="text"
+              placeholder="🔍 Search Business..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                borderRadius: "20px",
+                padding: "6px 15px",
+                border: "1px solid #ddd",
+                width: "350px",
+                fontSize: "0.85rem",
+                outline: "none",
+                backgroundColor: "white",
+              }}
+            />
+          </div>
+        )}
+        <button
+          className="btn btn-outline btn-sm"
+          onClick={() => {
+            if (isSelectionMode) {
+              setIsSelectionMode(false);
+              setSelectedIds(new Set());
+            } else {
+              setIsSelectionMode(true);
+            }
+          }}
+          style={{ borderRadius: "20px", padding: "4px 15px" }}
+        >
+          {isSelectionMode ? "Cancel Selection" : "Select Multiple Leads"}
+        </button>
+        {isSelectionMode && (
           <button
             className="btn btn-outline btn-sm"
             onClick={toggleSelectAll}
-            style={{ borderRadius: "20px", padding: "4px 15px" }}
+            style={{
+              borderRadius: "20px",
+              padding: "4px 15px",
+              marginLeft: "10px",
+            }}
           >
-            {selectedIds.size === leads.length && leads.length > 0
-              ? "Deselect All"
-              : "Select All"}
+            {selectedIds.size === leads.length ? "Deselect All" : "Select All"}
           </button>
         )}
 
@@ -411,22 +546,20 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
         </label>
 
         {/* Language Selection for Drafting */}
-        {selectionMode && (
-          <div className="lang-toggle">
-            <button
-              className={`lang-btn ${draftLanguage === "DE" ? "active" : ""}`}
-              onClick={() => setDraftLanguage("DE")}
-            >
-              GER
-            </button>
-            <button
-              className={`lang-btn ${draftLanguage === "EN" ? "active" : ""}`}
-              onClick={() => setDraftLanguage("EN")}
-            >
-              EN
-            </button>
-          </div>
-        )}
+        <div className="lang-toggle">
+          <button
+            className={`lang-btn ${draftLanguage === "DE" ? "active" : ""}`}
+            onClick={() => setDraftLanguage("DE")}
+          >
+            GER
+          </button>
+          <button
+            className={`lang-btn ${draftLanguage === "EN" ? "active" : ""}`}
+            onClick={() => setDraftLanguage("EN")}
+          >
+            EN
+          </button>
+        </div>
 
         <div className="result-count">
           Showing {leads.length} {leads.length === 1 ? "Lead" : "Leads"}
@@ -435,77 +568,51 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
 
       {/* Main Actions Bar */}
       <div className="main-actions-bar">
-        {selectionMode ? (
+        {selectedIds.size > 0 && (
           <>
             <span className="selected-count">{selectedIds.size} selected</span>
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={toggleSelectionMode}
-            >
-              Cancel
-            </button>
-            {selectedIds.size > 0 && (
+            {activeTab === "new" ? (
               <button
                 className="btn btn-primary btn-sm"
                 onClick={handleDraftSelected}
                 disabled={drafting}
               >
-                {drafting ? "Drafting..." : "Draft Emails"}
+                {drafting ? "mhh mhh ing..." : "Draft Email"}
               </button>
+            ) : (
+              <>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handleDraftSelected}
+                  disabled={drafting}
+                >
+                  {drafting ? "mhh mhh ing..." : "Re-Draft Email"}
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handleSendToSalesforce}
+                  disabled={sendingToSalesforce}
+                  style={{ marginLeft: "10px", backgroundColor: "#00a1e0" }}
+                >
+                  {sendingToSalesforce ? "Sending..." : "Send Lead to SFDC"}
+                </button>
+              </>
             )}
-            {selectedIds.size > 0 && activeTab === "drafted" && (
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={handleSendToSalesforce}
-                disabled={sendingToSalesforce}
-                style={{ marginLeft: "10px", backgroundColor: "#00a1e0" }}
-              >
-                {sendingToSalesforce ? "Sending..." : "Send to Salesforce"}
-              </button>
-            )}
-          </>
-        ) : (
-          <>
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={toggleSelectionMode}
-            >
-              Mark for Mail
-            </button>
-            <button className="btn btn-outline btn-sm" onClick={handleExport}>
-              Export CSV
-            </button>
-            <button
-              className="btn btn-sm"
-              onClick={onClose}
-              style={{ display: "flex", alignItems: "center", gap: "8px" }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
-            </button>
           </>
         )}
+        <button
+          className="btn btn-outline btn-sm"
+          onClick={handleExport}
+          style={{ marginLeft: selectedIds.size > 0 ? "10px" : "0" }}
+        >
+          Export CSV
+        </button>
       </div>
 
       {drafting && (
-        <div className="progress-container">
-          <div className="progress-bar" style={{ width: "100%" }}></div>
-          <small
-            style={{ display: "block", textAlign: "center", marginTop: "5px" }}
-          >
-            Processing emails via Ollama...
-          </small>
+        <div className="ollama-loader">
+          <div className="ollama-brain">🦙..🐏..🦙..🐏</div>
+          <div className="ollama-text">Ollama is mhh mhh ing...</div>
         </div>
       )}
 
@@ -516,14 +623,19 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
           <table className="table">
             <thead>
               <tr>
-                <th className="col-select">Select</th>
-                <th className="col-rank">#</th>
+                <th className="col-rank" style={{ textAlign: "center" }}>
+                  #
+                </th>
                 <th className="col-business">Business Name</th>
-                <th className="col-address">Address</th>
-                <th className="col-contact">Contact</th>
+                <th className="col-info">Info</th>
                 <th className="col-social">Social Media</th>
-                <th className="col-notes">Notes</th>
-                <th className="col-status">Email Status</th>
+                {activeTab !== "sent" && <th className="col-edit">Edit</th>}
+                <th className="col-status-left">
+                  {activeTab === "sent" ? "Status Email" : "Status"}
+                </th>
+                <th className="col-actions-left">
+                  {activeTab === "sent" ? "Status Salesforce" : "Action"}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -532,37 +644,25 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                   key={lead.id}
                   className={selectedIds.has(lead.id) ? "row-selected" : ""}
                 >
-                  <td className="col-select">
-                    {!selectionMode && (
-                      <button
-                        className="btn-text"
-                        onClick={() => setEditingLead(lead)}
-                        style={{ padding: "4px", opacity: 0.6 }}
-                        title="Edit Lead"
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                        </svg>
-                      </button>
-                    )}
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(lead.id)}
-                      onChange={() => toggleLeadSelection(lead.id)}
-                      className="checkbox-custom"
-                    />
-                  </td>
                   <td className="col-rank">
-                    {(page - 1) * perPage + index + 1}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <span>{(page - 1) * perPage + index + 1}</span>
+                      {isSelectionMode && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(lead.id)}
+                          onChange={() => toggleLeadSelection(lead.id)}
+                          className="checkbox-custom"
+                        />
+                      )}
+                    </div>
                   </td>
                   <td className="col-business">
                     <div className="business-name">{lead.business_name}</div>
@@ -572,89 +672,265 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="website-link"
+                        title={lead.website}
                       >
                         {lead.website}
                       </a>
                     )}
                   </td>
-                  <td className="col-address">{lead.address || "—"}</td>
-                  <td className="col-contact">
-                    {lead.email && (
-                      <div className="contact-item">📧 {lead.email}</div>
-                    )}
-                    {lead.phone && (
-                      <div className="contact-item">📞 {lead.phone}</div>
-                    )}
-                    {!lead.email && !lead.phone && "—"}
+                  <td className="col-info">
+                    <ul className="info-list">
+                      {lead.email && (
+                        <li className="info-item" title={lead.email}>
+                          <span className="info-icon">📧</span>
+                          <span className="truncate">{lead.email}</span>
+                        </li>
+                      )}
+                      {lead.phone && (
+                        <li className="info-item" title={lead.phone}>
+                          <span className="info-icon">📞</span>
+                          <span>{lead.phone}</span>
+                        </li>
+                      )}
+                      {lead.address && (
+                        <li className="info-item" title={lead.address}>
+                          <span className="info-icon">📍</span>
+                          <span className="truncate">{lead.address}</span>
+                        </li>
+                      )}
+                      {!lead.email && !lead.phone && !lead.address && (
+                        <li className="info-item">
+                          <span className="info-icon">⚠️</span>
+                          <span>No info found</span>
+                        </li>
+                      )}
+                    </ul>
                   </td>
                   <td className="col-social">
                     <div className="social-links">
                       {Object.entries(
                         lead.enrichment_data?.social_links || {},
-                      ).map(([platform, link]) => (
-                        <a
-                          key={platform}
-                          href={link as string}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="social-icon"
-                          title={platform}
-                        >
-                          {platform === "facebook" && "FB"}
-                          {platform === "instagram" && "IG"}
-                          {platform === "linkedin" && "LI"}
-                          {platform === "twitter" && "TW"}
-                          {![
-                            "facebook",
-                            "instagram",
-                            "linkedin",
-                            "twitter",
-                          ].includes(platform) && "🔗"}
-                        </a>
-                      ))}
+                      ).map(([platform, link]) => {
+                        const platformClass = platform.toLowerCase();
+                        return (
+                          <a
+                            key={platform}
+                            href={link as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`social-icon ${platformClass} generic`}
+                            title={platform}
+                          >
+                            {platform.toLowerCase() === "facebook" && "FB"}
+                            {platform.toLowerCase() === "instagram" && "IG"}
+                            {platform.toLowerCase() === "linkedin" && "LI"}
+                            {platform.toLowerCase() === "twitter" && "TW"}
+                            {platform.toLowerCase() === "tiktok" && "TT"}
+                            {![
+                              "facebook",
+                              "instagram",
+                              "linkedin",
+                              "twitter",
+                              "tiktok",
+                            ].includes(platform.toLowerCase()) && "🔗"}
+                          </a>
+                        );
+                      })}
+                      {Object.keys(lead.enrichment_data?.social_links || {})
+                        .length === 0 && (
+                        <span style={{ fontSize: "0.8rem", opacity: 0.5 }}>
+                          —
+                        </span>
+                      )}
                     </div>
                   </td>
-                  <td className="col-notes">
-                    <textarea
-                      className="note-input"
-                      placeholder="Add note..."
-                      defaultValue={lead.notes || ""}
-                      onBlur={(e) => handleUpdateNote(lead.id, e.target.value)}
-                    />
-                  </td>
-                  <td className="col-status">
-                    {(() => {
-                      const statusRaw = lead.email_status;
-                      const status = statusRaw?.toLowerCase();
-                      const badgeClass = getBadgeClass(status || "");
-
-                      if (!status || status === "pending_approval") {
-                        return <span className={badgeClass}>No Draft</span>;
-                      }
-
-                      let label = status.replace("_", " ");
-                      if (status === "approved") label = "Email Approved";
-                      if (status === "sent") label = "Email Send";
-                      if (status === "drafted") label = "Drafted";
-                      if (status === "sfdx") label = "In Salesforce";
-
-                      return (
-                        <span
-                          className={`badge ${badgeClass}`}
-                          onClick={() =>
-                            lead.email_id && setSelectedEmailId(lead.email_id)
-                          }
-                          title={
-                            ["drafted", "approved"].includes(status)
-                              ? "Click to edit/send"
-                              : ""
-                          }
+                  {activeTab !== "sent" && (
+                    <td className="col-edit">
+                      <button
+                        className="btn-edit"
+                        onClick={() => setEditingLead(lead)}
+                        title="Edit Lead"
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          {label}
-                        </span>
-                      );
-                    })()}
-                  </td>
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    </td>
+                  )}
+                  {activeTab !== "sent" ? (
+                    <>
+                      <td className="col-status-left">
+                        {(() => {
+                          const statusRaw = lead.email_status;
+                          const status = statusRaw?.toLowerCase();
+                          const badgeClass = getBadgeClass(status || "");
+
+                          if (!status || status === "pending_approval") {
+                            return (
+                              <span className={`badge ${badgeClass}`}>
+                                No Draft
+                              </span>
+                            );
+                          }
+
+                          let label = status.replace("_", " ");
+                          if (status === "approved") label = "Approved";
+                          if (status === "sent") label = "Email Sent";
+                          if (status === "drafted") label = "Drafted";
+                          if (status === "sfdx") label = "In Salesforce";
+
+                          return (
+                            <span
+                              className={`badge ${badgeClass}`}
+                              onClick={() =>
+                                lead.email_id &&
+                                setSelectedEmailId(lead.email_id)
+                              }
+                              title={
+                                ["drafted", "approved"].includes(status)
+                                  ? "Click to edit/send"
+                                  : ""
+                              }
+                            >
+                              {status === "drafted" ? "View Email" : label}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td className="col-actions-left">
+                        <button
+                          className="btn btn-primary btn-small"
+                          onClick={async () => {
+                            if (activeTab === "new") {
+                              setLoadingIds((prev) =>
+                                new Set(prev).add(lead.id),
+                              );
+                              try {
+                                await api.draftEmails([lead.id], draftLanguage);
+                                loadLeads(false);
+                              } catch (err) {
+                                console.error("Draft error:", err);
+                              } finally {
+                                setLoadingIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(lead.id);
+                                  return next;
+                                });
+                              }
+                            } else {
+                              // Drafted tab - Send Email
+                              if (!lead.email_id) return;
+                              setLoadingIds((prev) =>
+                                new Set(prev).add(lead.id),
+                              );
+                              try {
+                                const result = await api.sendEmail(
+                                  lead.email_id,
+                                );
+                                if (result.status === "success") {
+                                  loadLeads(false);
+                                  showToast(
+                                    "Email and Salesforce sync successful!",
+                                  );
+                                } else {
+                                  alert(`Send failed: ${result.error}`);
+                                }
+                              } catch (err: unknown) {
+                                console.error("Send error:", err);
+                                const errorMessage =
+                                  err instanceof Error
+                                    ? err.message
+                                    : "Check terminal logs";
+                                alert(`Send error: ${errorMessage}`);
+                              } finally {
+                                setLoadingIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(lead.id);
+                                  return next;
+                                });
+                              }
+                            }
+                          }}
+                          disabled={loadingIds.has(lead.id)}
+                          style={{ padding: "4px 8px", fontSize: "0.75rem" }}
+                        >
+                          {loadingIds.has(lead.id)
+                            ? "mhh mhh ing..."
+                            : activeTab === "new"
+                              ? "Draft Email"
+                              : "Send Email"}
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="col-status-left">
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-start",
+                            gap: "6px",
+                          }}
+                        >
+                          <span className={`badge badge-success`}>
+                            Send (success)
+                          </span>
+                          <button
+                            className="btn btn-outline btn-xs"
+                            style={{ fontSize: "0.65rem", padding: "2px 6px" }}
+                            onClick={() =>
+                              lead.email_id &&
+                              handleResendSingleEmail(lead.email_id)
+                            }
+                            disabled={drafting}
+                          >
+                            {drafting ? "..." : "Re-send Email"}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="col-status-left">
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-start",
+                            gap: "6px",
+                          }}
+                        >
+                          <span
+                            className={`badge ${lead.sfdc_status === "success" ? "badge-success" : "badge-warning"}`}
+                          >
+                            {lead.sfdc_status === "success"
+                              ? "Send (success)"
+                              : lead.sfdc_status === "failed"
+                                ? "Failed"
+                                : "Pending"}
+                          </span>
+                          <button
+                            className="btn btn-outline btn-xs"
+                            style={{ fontSize: "0.65rem", padding: "2px 6px" }}
+                            onClick={() => handleResendSingleSFDC(lead.id)}
+                            disabled={sendingToSalesforce}
+                          >
+                            {sendingToSalesforce
+                              ? "..."
+                              : "Re-send to Salesforce"}
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -699,6 +975,13 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
           onSave={handleSaveLead}
           onClose={() => setEditingLead(null)}
         />
+      )}
+
+      {toast.visible && (
+        <div className="toast-notification">
+          <span className="toast-icon">⚠️</span>
+          {toast.message}
+        </div>
       )}
     </div>
   );

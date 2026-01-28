@@ -27,9 +27,36 @@
 .leads-tabs {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 0.5rem;
+}
+
+.leads-tabs-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.btn-home-wide {
+  width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-home-wide:hover {
+  border-color: var(--accent-primary);
+  background: rgba(110, 64, 201, 0.1);
+  color: var(--accent-primary);
 }
 
 .tab-btn {
@@ -179,31 +206,32 @@
 }
 
 /* Specific Column Widths */
-.col-select {
-  width: 70px;
-  text-overflow: clip !important;
-}
 .col-rank {
-  width: 60px;
+  width: 80px;
   text-align: center;
   color: var(--text-muted);
   font-size: 0.8rem;
 }
 .col-business {
-  width: 25%;
+  width: 18%;
 }
-.col-address {
+.col-info {
   width: 25%;
 }
 .col-social {
-  width: 15%;
-}
-.col-notes {
-  width: 20%;
-}
-.col-status {
   width: 130px;
-  text-align: right;
+}
+.col-edit {
+  width: 60px;
+  text-align: center;
+}
+.col-status-left {
+  width: 150px;
+  text-align: left;
+}
+.col-actions-left {
+  width: 130px;
+  text-align: left;
 }
 
 .table td.col-address {
@@ -316,6 +344,15 @@
   font-size: 0.75rem;
   font-weight: 500;
 }
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .badge.interactive {
   cursor: pointer;
   transition:
@@ -398,9 +435,84 @@
 }
 
 .social-icon:hover {
-  background: var(--primary-start);
-  color: #fff;
   transform: translateY(-2px);
+  filter: brightness(1.2);
+}
+
+.social-icon.instagram {
+  background: #e1306c;
+  color: white;
+  border: none;
+}
+.social-icon.facebook {
+  background: #1877f2;
+  color: white;
+  border: none;
+}
+.social-icon.tiktok {
+  background: #000000;
+  color: white;
+  border: none;
+}
+.social-icon.linkedin {
+  background: #0a66c2;
+  color: white;
+  border: none;
+}
+.social-icon.twitter {
+  background: #1da1f2;
+  color: white;
+  border: none;
+}
+.social-icon.generic {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+/* Info List */
+.info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.info-icon {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Edit Button */
+.btn-edit {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
   border-color: var(--primary-start);
 }
 
@@ -495,4 +607,56 @@
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 2rem;
+}
+
+.btn-xs {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-xs:hover:not(:disabled) {
+  background: rgba(110, 64, 201, 0.1);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid #ef4444;
+  color: #f87171;
+  padding: 12px 24px;
+  border-radius: 30px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  animation: toastFadeIn 0.3s ease;
+}
+
+.toast-icon {
+  font-size: 1.2rem;
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }

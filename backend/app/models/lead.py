@@ -15,6 +15,8 @@ class Lead(Base):
 
     # Core business info
     business_name = Column(String, nullable=False)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
     address = Column(Text, nullable=True)
     website = Column(String, nullable=True)
     email = Column(String, nullable=True)
@@ -27,6 +29,10 @@ class Lead(Base):
     sources = Column(JSON, default=list)  # List of provider names
     enrichment_data = Column(JSON, default=dict)  # Social profiles, additional contacts
     notes = Column(Text, nullable=True)
+
+    # Salesforce Integration
+    sfdc_status = Column(String, nullable=True) # success, failed
+    sfdc_id = Column(String, nullable=True)
 
     created_at = Column(DateTime, default=get_german_now)
     updated_at = Column(DateTime, default=get_german_now, onupdate=get_german_now)

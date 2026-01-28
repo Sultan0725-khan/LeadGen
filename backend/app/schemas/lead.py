@@ -8,6 +8,8 @@ class LeadResponse(BaseModel):
     id: str
     run_id: str
     business_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     address: Optional[str] = None
     website: Optional[str] = None
     email: Optional[str] = None
@@ -21,6 +23,8 @@ class LeadResponse(BaseModel):
     created_at: datetime
     email_status: Optional[str] = None  # From related email record
     email_id: Optional[str] = None
+    sfdc_status: Optional[str] = None
+    sfdc_id: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -29,6 +33,8 @@ class LeadResponse(BaseModel):
 class LeadUpdate(BaseModel):
     """Schema for updating lead info."""
     business_name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     address: Optional[str] = None
     website: Optional[str] = None
     email: Optional[str] = None

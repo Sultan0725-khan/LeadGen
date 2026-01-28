@@ -15,15 +15,19 @@ export function EmailDraftModal({
   onUpdate,
 }: EmailDraftModalProps) {
   const [email, setEmail] = useState<Email | null>(null);
+  const [persistedEmail, setPersistedEmail] = useState<Email | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [redrafting, setRedrafting] = useState(false);
+  const [redraftPrompt, setRedraftPrompt] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const loadEmail = useCallback(async () => {
     try {
       const data = await api.getEmail(emailId);
       setEmail(data);
+      setPersistedEmail(data);
     } catch (err) {
       console.error("Failed to load email draft:", err);
       setError("Failed to load email draft");
@@ -39,11 +43,13 @@ export function EmailDraftModal({
   const handleSave = async () => {
     if (!email) return;
     setSaving(true);
+    setError(null);
     try {
       await api.updateEmail(emailId, {
         subject: email.subject,
         body: email.body,
       });
+      setPersistedEmail(email);
       if (onUpdate) onUpdate();
     } catch (err) {
       console.error(err);
@@ -53,9 +59,43 @@ export function EmailDraftModal({
     }
   };
 
+  const handleRedraft = async () => {
+    if (!redraftPrompt.trim()) return;
+    setRedrafting(true);
+    setError(null);
+    try {
+      const updated = await api.redraftEmail(emailId, redraftPrompt);
+      if (updated.subject === email?.subject && updated.body === email?.body) {
+        setError("Ollama returned the same content. Try a different prompt.");
+      } else {
+        setEmail(updated);
+        setPersistedEmail(updated);
+        setRedraftPrompt("");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to re-draft email. Check if Ollama is running.");
+    } finally {
+      setRedrafting(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!email) return;
+
+    // Check if user has manual unsaved changes
+    if (
+      email.subject !== persistedEmail?.subject ||
+      email.body !== persistedEmail?.body
+    ) {
+      setError("Please Save Draft before sending.");
+      return;
+    }
+
+    // Check if lead has email (we need lead info for this, but if we have the draft,
+    // the backend already checked it, but let's be safe if lead email was removed)
     setSending(true);
+    setError(null);
     try {
       const result = await api.sendEmail(emailId);
       if (result.status === "success") {
@@ -66,7 +106,9 @@ export function EmailDraftModal({
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to send email");
+      setError(
+        "Failed to send email. Check if lead has a valid email address.",
+      );
     } finally {
       setSending(false);
     }
@@ -88,6 +130,13 @@ export function EmailDraftModal({
             &times;
           </button>
         </div>
+
+        {redrafting && (
+          <div className="ollama-loader" style={{ margin: "1rem" }}>
+            <div className="ollama-brain">🦙..🐏..🦙..🐏</div>
+            <div className="ollama-text">Ollama is mhh mhh ing...</div>
+          </div>
+        )}
 
         {error && <div className="error-message">{error}</div>}
 
@@ -116,8 +165,29 @@ export function EmailDraftModal({
                 )
               }
               className="textarea-field"
-              rows={12}
+              rows={10}
             />
+          </div>
+
+          <div className="redraft-container">
+            <label>Refine Draft (Ollama)</label>
+            <div className="redraft-input-group">
+              <input
+                type="text"
+                value={redraftPrompt}
+                onChange={(e) => setRedraftPrompt(e.target.value)}
+                placeholder="e.g. Make it more formal, mention the discount..."
+                className="input-field"
+                onKeyPress={(e) => e.key === "Enter" && handleRedraft()}
+              />
+              <button
+                className="btn btn-secondary btn-small"
+                onClick={handleRedraft}
+                disabled={redrafting || !redraftPrompt.trim()}
+              >
+                {redrafting ? "mhh mhh ing..." : "Re-Draft"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -125,7 +195,7 @@ export function EmailDraftModal({
           <button
             className="btn btn-outline"
             onClick={onClose}
-            disabled={saving || sending}
+            disabled={saving || sending || redrafting}
           >
             Cancel
           </button>
@@ -133,16 +203,16 @@ export function EmailDraftModal({
             <button
               className="btn btn-outline"
               onClick={handleSave}
-              disabled={saving || sending}
+              disabled={saving || sending || redrafting}
             >
               {saving ? "Saving..." : "Save Draft"}
             </button>
             <button
-              className="btn"
+              className="btn btn-primary"
               onClick={handleSend}
-              disabled={saving || sending}
+              disabled={saving || sending || redrafting}
             >
-              {sending ? "Sending..." : "Send Now"}
+              {sending ? "Sending..." : "Send-Email"}
             </button>
           </div>
         </div>

@@ -355,3 +355,67 @@ body {
   color: var(--text-secondary);
   font-size: 1.1rem;
 }
+/* Ollama Loading State - "mhh mhh ing" */
+.ollama-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: var(--radius-lg);
+  margin: 1rem 0;
+  animation: pulseOllama 2s infinite ease-in-out;
+}
+
+.ollama-brain {
+  font-size: 3rem;
+  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
+  animation: floatBrain 3s infinite ease-in-out;
+}
+
+.ollama-text {
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6, #8b5cf6);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmerText 3s linear infinite;
+}
+
+@keyframes pulseOllama {
+  0%,
+  100% {
+    background: rgba(139, 92, 246, 0.05);
+    border-color: rgba(139, 92, 246, 0.2);
+  }
+  50% {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.4);
+  }
+}
+
+@keyframes floatBrain {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.1);
+  }
+}
+
+@keyframes shimmerText {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}

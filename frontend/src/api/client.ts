@@ -10,6 +10,7 @@ export interface Run {
   total_leads: number;
   total_emails?: number;
   total_websites?: number;
+  total_drafts?: number;
   selected_providers?: string[];
   provider_limits?: Record<string, number>;
   error_message?: string;
@@ -22,6 +23,8 @@ export interface Lead {
   id: string;
   run_id: string;
   business_name: string;
+  first_name?: string;
+  last_name?: string;
   address?: string;
   website?: string;
   email?: string;
@@ -35,6 +38,8 @@ export interface Lead {
   created_at: string;
   email_status?: string;
   email_id?: string;
+  sfdc_status?: string;
+  sfdc_id?: string;
 }
 
 export interface Email {
@@ -124,6 +129,7 @@ export const api = {
       has_email?: boolean;
       has_website?: boolean;
       email_status?: string;
+      q?: string;
     },
   ): Promise<{ leads: Lead[]; total: number }> {
     let url = `${API_BASE_URL}/leads/run/${runId}?page=${page}&per_page=${per_page}`;
@@ -133,6 +139,7 @@ export const api = {
       url += `&has_website=${filters.has_website}`;
     if (filters?.email_status !== undefined)
       url += `&email_status=${filters.email_status}`;
+    if (filters?.q !== undefined) url += `&q=${encodeURIComponent(filters.q)}`;
 
     const response = await fetch(url);
     if (!response.ok) throw new Error("Failed to fetch leads");
@@ -172,11 +179,23 @@ export const api = {
     return response.json();
   },
 
-  async sendEmail(emailId: string): Promise<{ status: string }> {
+  async sendEmail(
+    emailId: string,
+  ): Promise<{ status: string; error?: string }> {
     const response = await fetch(`${API_BASE_URL}/emails/${emailId}/send`, {
       method: "POST",
     });
     if (!response.ok) throw new Error("Failed to send email");
+    return response.json();
+  },
+
+  async redraftEmail(emailId: string, prompt: string): Promise<Email> {
+    const response = await fetch(`${API_BASE_URL}/emails/${emailId}/redraft`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+    if (!response.ok) throw new Error("Failed to redraft email");
     return response.json();
   },
 

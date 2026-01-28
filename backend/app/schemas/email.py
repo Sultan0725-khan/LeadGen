@@ -30,3 +30,8 @@ class EmailUpdateRequest(BaseModel):
     """Request to update an email draft."""
     subject: str
     body: str
+
+
+class EmailRedraftRequest(BaseModel):
+    """Request to refine an email draft with a prompt."""
+    prompt: str

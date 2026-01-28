@@ -253,6 +253,41 @@ class AgentOrchestrator:
 
         return drafted_count
 
+    async def redraft_targeted_email(self, email_id: str, custom_prompt: str) -> Optional[Email]:
+        """Redraft a specific email based on a custom prompt."""
+        email = self.db.query(Email).filter(Email.id == email_id).first()
+        if not email:
+            return None
+
+        lead = self.db.query(Lead).filter(Lead.id == email.lead_id).first()
+        run = self.db.query(Run).filter(Run.id == lead.run_id).first()
+
+        lead_data = {
+            "business_name": lead.business_name,
+            "category": run.category,
+            "address": lead.address,
+            "website": lead.website,
+            "email": lead.email,
+            "enrichment_data": lead.enrichment_data or {}
+        }
+
+        redrafted = await self.email_writer.redraft_email(
+            lead_data,
+            email.subject,
+            email.body,
+            custom_prompt,
+            email.language or "DE"
+        )
+
+        if redrafted:
+            email.subject = redrafted["subject"]
+            email.body = redrafted["body"]
+            email.generated_at = get_german_now()
+            self.db.commit()
+            return email
+
+        return None
+
     async def _send_emails(self, run: Run):
         """Send approved emails."""
         emails = self.db.query(Email).join(Lead).filter(

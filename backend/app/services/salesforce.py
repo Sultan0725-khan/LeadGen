@@ -130,6 +130,7 @@ class SalesforceService:
             "LastName": lead_data.get("LastName") or "LeadGen",
             "Company": lead_data.get("Company") or "Individual",
             "Email": lead_data.get("Email"),
+            "Website": lead_data.get("Website"),
             "Phone": lead_data.get("Phone"),
             "LeadSource": lead_data.get("LeadSource", "Byte2Bite"),
             "Description": lead_data.get("Notes")

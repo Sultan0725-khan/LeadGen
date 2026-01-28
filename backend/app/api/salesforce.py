@@ -44,6 +44,7 @@ async def send_leads_to_salesforce(
                 "FirstName": lead.business_name.split(' ')[0] if ' ' in lead.business_name else "",
                 "LastName": lead.business_name.split(' ', 1)[1] if ' ' in lead.business_name else lead.business_name,
                 "Company": lead.business_name,
+                "Website": lead.website,
                 "Email": lead.email,
                 "Phone": lead.phone,
                 "LeadSource": "Byte2Bite",
