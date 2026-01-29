@@ -20,7 +20,6 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_username: Optional[str] = None
     smtp_password: Optional[str] = None
-
     # Email SendGrid
     sendgrid_api_key: Optional[str] = None
 

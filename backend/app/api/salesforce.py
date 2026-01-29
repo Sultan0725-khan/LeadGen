@@ -80,6 +80,7 @@ async def send_leads_to_salesforce(
             # Update the lead record as well for UI consistency
             lead.sfdc_status = "success"
             lead.sfdc_id = sf_res.get("id")
+            lead.sfdc_error = None
 
             # We commit inside the loop to ensure progress is saved even if subsequent ones fail
             # This is safer for partial batch success
@@ -96,7 +97,9 @@ async def send_leads_to_salesforce(
         except Exception as e:
             logger.error(f"Failed to send lead {lead_id} to Salesforce: {str(e)}")
             results.append({"lead_id": lead_id, "success": False, "error": str(e)})
-            db.rollback()
+            lead.sfdc_status = "failed"
+            lead.sfdc_error = str(e)
+            db.commit() # Save the failure status
 
     if leads:
         refresh_run_stats(leads[0].run_id, db)

@@ -33,6 +33,7 @@ class Lead(Base):
     # Salesforce Integration
     sfdc_status = Column(String, nullable=True) # success, failed
     sfdc_id = Column(String, nullable=True)
+    sfdc_error = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=get_german_now)
     updated_at = Column(DateTime, default=get_german_now, onupdate=get_german_now)

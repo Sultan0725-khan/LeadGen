@@ -2,6 +2,7 @@ import httpx
 import logging
 from typing import Dict, Any, Optional
 from app.config import settings
+from app.utils.pretty_logger import PrettyLogger
 
 logger = logging.getLogger(__name__)
 
@@ -69,17 +70,17 @@ class SalesforceService:
         }
 
         # Detailed debug logging for the request
-        print(f"\n>>> SALESFORCE REQUEST: {method} {url}")
-        if data:
-            import json
-            print(f">>> PAYLOAD: {json.dumps(data, indent=2)}")
+        PrettyLogger.log_request("Salesforce", method, url, data)
 
         async with httpx.AsyncClient() as client:
             response = await client.request(method, url, headers=headers, json=data)
 
-            print(f"<<< SALESFORCE RESPONSE: {response.status_code}")
-            if response.status_code >= 400:
-                print(f"<<< ERROR BODY: {response.text}")
+            try:
+                res_body = response.json() if response.content else {}
+            except:
+                res_body = response.text
+
+            PrettyLogger.log_response("Salesforce", response.status_code, res_body)
 
             # Handle token expiration
             if response.status_code == 401 and not is_retry:

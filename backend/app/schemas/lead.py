@@ -23,8 +23,10 @@ class LeadResponse(BaseModel):
     created_at: datetime
     email_status: Optional[str] = None  # From related email record
     email_id: Optional[str] = None
+    email_error: Optional[str] = None
     sfdc_status: Optional[str] = None
     sfdc_id: Optional[str] = None
+    sfdc_error: Optional[str] = None
 
     class Config:
         from_attributes = True

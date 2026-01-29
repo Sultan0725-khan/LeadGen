@@ -8,6 +8,7 @@ from app.models import OptOut
 from sqlalchemy.orm import Session
 import asyncio
 from collections import deque
+from app.utils.pretty_logger import PrettyLogger
 
 
 class EmailSender:
@@ -35,9 +36,7 @@ class EmailSender:
 
         # Dry run mode
         if dry_run:
-            print(f"[DRY RUN] Would send email to {to_email}")
-            print(f"Subject: {subject}")
-            print(f"Body preview: {body[:100]}...")
+            PrettyLogger.log_email(to_email, f"[DRY RUN] {subject}", True)
             return True, None
 
         # Rate limiting
@@ -46,11 +45,11 @@ class EmailSender:
         # Send via SMTP
         try:
             await self._send_smtp(to_email, subject, body)
-            print(f"Sent email to {to_email}")
+            PrettyLogger.log_email(to_email, subject, True)
             return True, None
         except Exception as e:
             error_msg = f"Failed to send email: {str(e)}"
-            print(error_msg)
+            PrettyLogger.log_email(to_email, subject, False, error_msg)
             return False, error_msg
 
     def _is_opted_out(self, email: str, db: Session) -> bool:

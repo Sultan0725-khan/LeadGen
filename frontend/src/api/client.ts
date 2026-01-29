@@ -40,8 +40,10 @@ export interface Lead {
   created_at: string;
   email_status?: string;
   email_id?: string;
+  email_error?: string;
   sfdc_status?: string;
   sfdc_id?: string;
+  sfdc_error?: string;
 }
 
 export interface Email {

@@ -1,0 +1,78 @@
+# CSV Column Mapping Configuration
+# Each tab can have a different set of columns.
+# format:
+#   header_name: lead_field_or_computed_field
+
+tabs:
+  new:
+    "Business Name": business_name
+    "Address": address
+    "Phone": phone
+    "Email": email
+    "Website": website
+    "Instagram": instagram
+    "TikTok": tiktok
+    "Facebook": facebook
+    "LinkedIn": linkedin
+    "Twitter": twitter
+    "Confidence Score": confidence_score
+    "Email Status": email_status
+    "Sources": sources
+
+  drafted:
+    "Business Name": business_name
+    "First Name": first_name
+    "Last Name": last_name
+    "Address": address
+    "Phone": phone
+    "Email": email
+    "Website": website
+    "Instagram": instagram
+    "TikTok": tiktok
+    "Facebook": facebook
+    "LinkedIn": linkedin
+    "Twitter": twitter
+    "Created": email_generated_at
+    "Email Subject": email_subject
+    "Email Body": email_body
+    "Email Status": email_status
+
+  sent:
+    "Business Name": business_name
+    "First Name": first_name
+    "Last Name": last_name
+    "Address": address
+    "Phone": phone
+    "Email": email
+    "Website": website
+    "Instagram": instagram
+    "TikTok": tiktok
+    "Facebook": facebook
+    "LinkedIn": linkedin
+    "Twitter": twitter
+    "Email Subject": email_subject
+    "Email Body": email_body
+    "Email Status": email_status
+    "Email Error": email_error
+    "Created": email_generated_at
+    "Sent At": sent_at
+    "SFDC Status": sfdc_status
+    "SFDC Error": sfdc_error
+    "SFDC ID": sfdc_id
+
+# default:
+#   "Business Name": business_name
+#   "First Name": first_name
+#   "Last Name": last_name
+#   "Email": email
+#   "Website": website
+#   "Facebook": facebook
+#   "Twitter": twitter
+#   "LinkedIn": linkedin
+#   "Instagram": instagram
+#   "Address": address
+#   "Phone": phone
+#   "Confidence Score": confidence_score
+#   "Sources": sources
+#   "Email Status": email_status
+#   "Social Links": social_links

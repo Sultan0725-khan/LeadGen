@@ -272,34 +272,44 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   };
 
   const handleResendSingleEmail = async (emailId: string) => {
+    setLoadingIds((prev) => new Set(prev).add(emailId));
     try {
-      setDrafting(true);
       const result = await api.sendEmail(emailId);
       if (result.status === "success") {
-        loadLeads(false);
+        showToast("E-Mail erfolgreich gesendet!");
       } else {
-        alert(`Failed to re-send email: ${result.error}`);
+        alert(`Fehler beim Senden: ${result.error}`);
       }
     } catch (err) {
       console.error("Resend error:", err);
     } finally {
-      setDrafting(false);
+      setLoadingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(emailId);
+        return next;
+      });
+      await loadLeads(false);
     }
   };
 
   const handleResendSingleSFDC = async (leadId: string) => {
-    setSendingToSalesforce(true);
+    setLoadingIds((prev) => new Set(prev).add(leadId));
     try {
       const result = await api.sendToSalesforce([leadId]);
       if (result.results[0].success) {
-        loadLeads(false);
+        showToast("Salesforce Sync erfolgreich!");
       } else {
-        alert(`Failed to send to Salesforce: ${result.results[0].error}`);
+        alert(`Salesforce Fehler: ${result.results[0].error}`);
       }
     } catch (error) {
       console.error("SFDC Resend error:", error);
     } finally {
-      setSendingToSalesforce(false);
+      setLoadingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(leadId);
+        return next;
+      });
+      await loadLeads(false);
     }
   };
 
@@ -697,13 +707,16 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                     {activeTab === "new" ? "Edit Kontakt" : "AI EMail"}
                   </th>
                 )}
-                <th className="col-actions-left">
-                  {activeTab === "sent"
-                    ? "Status Salesforce"
-                    : activeTab === "new"
-                      ? "AI Draft"
-                      : "Send Mail & SFDC"}
-                </th>
+                {activeTab === "sent" ? (
+                  <>
+                    <th className="col-status">Delivery</th>
+                    <th className="col-status-sf">SFDC</th>
+                  </>
+                ) : (
+                  <th className="col-actions">
+                    {activeTab === "new" ? "AI Draft" : "📧 ☑️ ⇢ ☁️ ☑️"}
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -854,7 +867,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                     </td>
                   )}
                   {activeTab !== "sent" ? (
-                    <td className="col-actions-left">
+                    <td className="col-actions">
                       <button
                         className="btn btn-primary btn-small"
                         onClick={async () => {
@@ -914,56 +927,64 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                     </td>
                   ) : (
                     <>
-                      <td className="col-actions-left">
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-start",
-                            gap: "6px",
-                          }}
-                        >
-                          <span className={`badge badge-success`}>
-                            Email Sent
+                      <td className="col-status">
+                        <div className="status-group">
+                          <span
+                            className={`badge badge-compact ${lead.email_status === "SENT" ? "badge-success" : lead.email_status === "FAILED" ? "badge-danger" : "badge-warning"}`}
+                            data-tooltip={
+                              lead.email_status === "FAILED"
+                                ? lead.email_error ||
+                                  "Fehler beim E-Mail Versand"
+                                : lead.email_status !== "SENT"
+                                  ? "E-Mail Versand ausstehend"
+                                  : undefined
+                            }
+                          >
+                            {lead.email_status === "SENT"
+                              ? "✅"
+                              : lead.email_status === "FAILED"
+                                ? "❌"
+                                : "⏳"}
                           </span>
                           <button
-                            className="btn btn-outline btn-xs"
-                            style={{ fontSize: "0.65rem", padding: "2px 6px" }}
+                            className={`btn-retry-icon ${loadingIds.has(lead.email_id || "") ? "loading" : ""}`}
                             onClick={() =>
                               lead.email_id &&
                               handleResendSingleEmail(lead.email_id)
                             }
-                            disabled={drafting}
+                            disabled={loadingIds.has(lead.email_id || "")}
+                            title="E-Mail erneut senden"
                           >
-                            {drafting ? "..." : "Re-send Email"}
+                            🔄
                           </button>
                         </div>
                       </td>
-                      <td className="col-actions-left">
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-start",
-                            gap: "6px",
-                          }}
-                        >
+                      <td className="col-status-sf">
+                        <div className="status-group">
                           <span
-                            className={`badge ${lead.sfdc_status === "success" ? "badge-success" : "badge-warning"}`}
+                            className={`badge badge-compact ${lead.sfdc_status === "success" ? "badge-success" : lead.sfdc_status === "failed" ? "badge-danger" : "badge-warning"}`}
+                            data-tooltip={
+                              lead.sfdc_status === "failed"
+                                ? lead.sfdc_error ||
+                                  "Salesforce Sync fehlgeschlagen"
+                                : lead.sfdc_status !== "success"
+                                  ? "Salesforce Sync ausstehend"
+                                  : undefined
+                            }
                           >
                             {lead.sfdc_status === "success"
-                              ? "SFDC Sync OK"
+                              ? "✅"
                               : lead.sfdc_status === "failed"
-                                ? "Failed"
-                                : "Pending"}
+                                ? "❌"
+                                : "⏳"}
                           </span>
                           <button
-                            className="btn btn-outline btn-xs"
-                            style={{ fontSize: "0.65rem", padding: "2px 6px" }}
+                            className={`btn-retry-icon ${loadingIds.has(lead.id) ? "loading" : ""}`}
                             onClick={() => handleResendSingleSFDC(lead.id)}
-                            disabled={sendingToSalesforce}
+                            disabled={loadingIds.has(lead.id)}
+                            title="An Salesforce senden"
                           >
-                            {sendingToSalesforce ? "..." : "Re-send to SFDC"}
+                            ☁️
                           </button>
                         </div>
                       </td>

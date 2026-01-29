@@ -117,9 +117,11 @@ async def send_bulk_emails(request: SendLeadsRequest, db: Session = Depends(get_
 
                 lead.sfdc_status = "success"
                 lead.sfdc_id = sf_result.get("id")
+                lead.sfdc_error = None
             except Exception as sf_err:
                 print(f"Salesforce chain failed for lead {lead_id}: {sf_err}")
                 lead.sfdc_status = "failed"
+                lead.sfdc_error = str(sf_err)
 
             db.commit()
             refresh_run_stats(lead.run_id, db)
@@ -180,10 +182,12 @@ async def send_specific_email(email_id: str, db: Session = Depends(get_db)):
 
             lead.sfdc_status = "success"
             lead.sfdc_id = sf_result.get("id")
+            lead.sfdc_error = None
             print(f"Successfully synced lead {lead.id} to Salesforce (ID: {lead.sfdc_id})")
         except Exception as sf_err:
             print(f"Salesforce synchronization failed for lead {lead.id}: {sf_err}")
             lead.sfdc_status = "failed"
+            lead.sfdc_error = str(sf_err)
     else:
         email.status = EmailStatus.FAILED
         email.error_message = error
@@ -257,3 +261,5 @@ def get_email(email_id: str, db: Session = Depends(get_db)):
     email.recipient_email = lead.email if lead else None
 
     return email
+
+

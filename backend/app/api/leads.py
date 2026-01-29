@@ -38,8 +38,10 @@ def _to_response(lead: Lead, email_record: Optional[Email]) -> LeadResponse:
         created_at=lead.created_at,
         email_status=email_record.status.value if email_record else None,
         email_id=email_record.id if email_record else None,
+        email_error=email_record.error_message if email_record else None,
         sfdc_status=lead.sfdc_status,
-        sfdc_id=lead.sfdc_id
+        sfdc_id=lead.sfdc_id,
+        sfdc_error=lead.sfdc_error
     )
 
 

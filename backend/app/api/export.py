@@ -6,6 +6,8 @@ from app.models.email import EmailStatus
 from typing import Optional
 import csv
 import io
+import yaml
+import os
 
 router = APIRouter(prefix="/api/export", tags=["export"])
 
@@ -32,46 +34,80 @@ def export_run_csv(run_id: str, email_status: Optional[str] = None, db: Session 
 
     leads = query.all()
 
+    # Load CSV mapping configuration
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "mappingCSV.yaml")
+    try:
+        with open(config_path, "r") as f:
+            mapping_config = yaml.safe_load(f)
+    except Exception as e:
+        print(f"Error loading CSV mapping: {e}")
+        mapping_config = {"default": {}}
+
+    # Get mapping for the current tab or default
+    tab_mapping = mapping_config.get("tabs", {}).get(email_status, mapping_config.get("default", {}))
+    headers = list(tab_mapping.keys())
+
     # Create CSV in memory
     output = io.StringIO()
     writer = csv.writer(output)
 
     # Write header
-    writer.writerow([
-        "Business Name",
-        "Address",
-        "Website",
-        "Email",
-        "Phone",
-        "Latitude",
-        "Longitude",
-        "Confidence Score",
-        "Sources",
-        "Email Status",
-        "Social Links",
-    ])
+    writer.writerow(headers)
 
     # Write data
     for lead in leads:
         email_record = db.query(Email).filter(Email.lead_id == lead.id).first()
-        current_lead_status = email_record.status.value if email_record else "none"
 
-        social_links = lead.enrichment_data.get("social_links", {})
-        social_str = ", ".join([f"{k}: {v}" for k, v in social_links.items()])
+        row = []
+        for header in headers:
+            field = tab_mapping[header]
+            value = ""
 
-        writer.writerow([
-            lead.business_name,
-            lead.address or "",
-            lead.website or "",
-            lead.email or "",
-            lead.phone or "",
-            lead.latitude or "",
-            lead.longitude or "",
-            lead.confidence_score,
-            ", ".join(lead.sources),
-            current_lead_status,
-            social_str,
-        ])
+            # Map database fields or computed values
+            if field == "business_name":
+                value = lead.business_name
+            elif field == "first_name":
+                value = lead.first_name or ""
+            elif field == "last_name":
+                value = lead.last_name or ""
+            elif field == "address":
+                value = lead.address or ""
+            elif field == "website":
+                value = lead.website or ""
+            elif field == "email":
+                value = lead.email or ""
+            elif field == "phone":
+                value = lead.phone or ""
+            elif field == "confidence_score":
+                value = lead.confidence_score
+            elif field == "sources":
+                value = ", ".join(lead.sources) if lead.sources else ""
+            elif field == "email_status":
+                value = email_record.status.value if email_record else "none"
+            elif field == "email_subject":
+                value = email_record.subject if email_record else ""
+            elif field == "email_body":
+                value = email_record.body if email_record else ""
+            elif field == "sfdc_id":
+                value = lead.sfdc_id or ""
+            elif field == "sfdc_status":
+                value = lead.sfdc_status or ""
+            elif field == "sent_at":
+                value = email_record.sent_at.isoformat() if email_record and email_record.sent_at else ""
+            elif field == "email_generated_at":
+                value = email_record.generated_at.strftime("%d.%m.%y %H:%M") if email_record and email_record.generated_at else ""
+            elif field == "created_at":
+                value = lead.created_at.isoformat() if lead.created_at else ""
+            elif field in ["instagram", "tiktok", "facebook", "linkedin", "twitter"]:
+                social_links = lead.enrichment_data.get("social_links", {})
+                value = social_links.get(field, "")
+            elif field == "social_links":
+                social_links = lead.enrichment_data.get("social_links", {})
+                value = ", ".join([f"{k}: {v}" for k, v in social_links.items()])
+
+            row.append(value)
+
+        writer.writerow(row)
 
     # Generate dynamic filename: B2B + tab_name + datum + uhrzeit + LeadAgent
     from datetime import datetime
