@@ -4,6 +4,7 @@ from typing import List, Optional, Annotated
 from app.database import get_db
 from app.schemas.lead import LeadResponse, LeadUpdate
 from app.models import Lead, Email, EmailStatus
+from app.config import settings
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
@@ -41,7 +42,8 @@ def _to_response(lead: Lead, email_record: Optional[Email]) -> LeadResponse:
         email_error=email_record.error_message if email_record else None,
         sfdc_status=lead.sfdc_status,
         sfdc_id=lead.sfdc_id,
-        sfdc_error=lead.sfdc_error
+        sfdc_error=lead.sfdc_error,
+        sfdc_instance_url=settings.sfdc_instance_url
     )
 
 
@@ -98,9 +100,12 @@ def get_run_leads(
     # Apply pagination and sorting
     offset = (page - 1) * per_page
 
-    if email_status in ["drafted", "sent"]:
-        # Sort by latest email activity (or lead creation if no email yet)
-        leads = query.order_by(Lead.created_at.desc()).offset(offset).limit(per_page).all()
+    if email_status == "sent":
+        # Sort by latest email activity
+        leads = query.order_by(Email.sent_at.desc()).offset(offset).limit(per_page).all()
+    elif email_status == "drafted":
+        # Sort by latest generated draft
+        leads = query.order_by(Email.generated_at.desc()).offset(offset).limit(per_page).all()
     else:
         leads = query.order_by(Lead.confidence_score.desc()).offset(offset).limit(per_page).all()
 

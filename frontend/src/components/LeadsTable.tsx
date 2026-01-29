@@ -607,7 +607,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                 onClick={handleDraftSelected}
                 disabled={drafting}
               >
-                {drafting ? "mhh mhh ing..." : "Draft Email"}
+                {drafting ? "🦙..🐏..🦙..🐏" : "Draft Email"}
               </button>
             ) : (
               <>
@@ -616,7 +616,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                   onClick={handleDraftSelected}
                   disabled={drafting}
                 >
-                  {drafting ? "mhh mhh ing..." : "Re-Draft Email"}
+                  {drafting ? "🦙..🐏..🦙..🐏" : "Re-Draft Email"}
                 </button>
                 <button
                   className="btn btn-primary btn-sm"
@@ -872,18 +872,14 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                         className="btn btn-primary btn-small"
                         onClick={async () => {
                           if (activeTab === "new") {
-                            setLoadingIds((prev) => new Set(prev).add(lead.id));
+                            setDrafting(true); // Trigger big llama loader
                             try {
                               await api.draftEmails([lead.id], draftLanguage);
-                              loadLeads(false);
+                              await loadLeads(false);
                             } catch (err) {
                               console.error("Draft error:", err);
                             } finally {
-                              setLoadingIds((prev) => {
-                                const next = new Set(prev);
-                                next.delete(lead.id);
-                                return next;
-                              });
+                              setDrafting(false);
                             }
                           } else {
                             // Drafted tab - Send Email
@@ -917,8 +913,8 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                         }}
                         disabled={loadingIds.has(lead.id)}
                       >
-                        {loadingIds.has(lead.id)
-                          ? "mhh mhh ing..."
+                        {loadingIds.has(lead.id) || drafting
+                          ? "🦙..🐏..🦙..🐏"
                           : activeTab === "new"
                             ? "Create Email"
                             : "Send Email"}
@@ -947,7 +943,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                                 : "⏳"}
                           </span>
                           <button
-                            className={`btn-retry-icon ${loadingIds.has(lead.email_id || "") ? "loading" : ""}`}
+                            className={`btn-retry-icon ${loadingIds.has(lead.email_id || "") ? "spinning" : ""}`}
                             onClick={() =>
                               lead.email_id &&
                               handleResendSingleEmail(lead.email_id)
@@ -979,13 +975,28 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                                 : "⏳"}
                           </span>
                           <button
-                            className={`btn-retry-icon ${loadingIds.has(lead.id) ? "loading" : ""}`}
+                            className={`btn-retry-icon ${loadingIds.has(lead.id) ? "spinning" : ""}`}
                             onClick={() => handleResendSingleSFDC(lead.id)}
                             disabled={loadingIds.has(lead.id)}
                             title="An Salesforce senden"
                           >
                             ☁️
                           </button>
+                          {lead.sfdc_id && lead.sfdc_instance_url && (
+                            <a
+                              href={`${lead.sfdc_instance_url}/lightning/r/Lead/${lead.sfdc_id}/view`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-retry-icon"
+                              title="Salesforce Lead öffnen"
+                              style={{
+                                textDecoration: "none",
+                                fontSize: "1.2rem",
+                              }}
+                            >
+                              🔗
+                            </a>
+                          )}
                         </div>
                       </td>
                     </>

@@ -27,6 +27,7 @@ class LeadResponse(BaseModel):
     sfdc_status: Optional[str] = None
     sfdc_id: Optional[str] = None
     sfdc_error: Optional[str] = None
+    sfdc_instance_url: Optional[str] = None
 
     class Config:
         from_attributes = True

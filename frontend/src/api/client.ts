@@ -44,6 +44,7 @@ export interface Lead {
   sfdc_status?: string;
   sfdc_id?: string;
   sfdc_error?: string;
+  sfdc_instance_url?: string;
 }
 
 export interface Email {

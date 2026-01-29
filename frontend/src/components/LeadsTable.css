@@ -309,7 +309,9 @@
 
 .btn-retry-icon.spinning {
   animation: spin 1s linear infinite;
-  opacity: 0.7;
+  opacity: 0.8;
+  cursor: wait;
+  pointer-events: none; /* Disable interaction while spinning */
 }
 
 @keyframes spin {
