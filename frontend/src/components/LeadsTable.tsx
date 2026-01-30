@@ -381,130 +381,126 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   }
 
   return (
-    <div className="card leads-table">
-      <div
-        className="leads-header"
-        style={{
-          marginBottom: "1.5rem",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
-          paddingBottom: "1rem",
-        }}
-      >
-        <h2 className="text-gradient" style={{ fontSize: "2rem" }}>
-          Leads ({run?.total_leads || 0})
-        </h2>
+    <div className={`card leads-table theme-${activeTab}`}>
+      <div className="leads-header-mini">
+        <h2 className="text-gradient">Leads ({run?.total_leads || 0})</h2>
+        {run && (
+          <div className="header-stats-row">
+            <div className="stat-capsule">
+              <span className="stat-label">Emails:</span>
+              <span className="stat-val primary">{run.total_emails || 0}</span>
+            </div>
+            <div className="stat-capsule">
+              <span className="stat-label">Websites:</span>
+              <span className="stat-val secondary">
+                {run.total_websites || 0}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
       {/* Run Specific Stats in Header */}
-      {run && (
-        <div className="run-stats-summary">
-          <div className="card">
-            <h4 style={{ margin: 0, opacity: 0.7, fontSize: "0.85rem" }}>
-              Emails Found
-            </h4>
-            <div
-              style={{
-                fontSize: "1.75rem",
-                fontWeight: 800,
-                color: "var(--primary-start)",
-                marginTop: "0.5rem",
-              }}
-            >
-              {run.total_emails || 0}
-            </div>
-          </div>
-          <div className="card">
-            <h4 style={{ margin: 0, opacity: 0.7, fontSize: "0.85rem" }}>
-              Websites Found
-            </h4>
-            <div
-              style={{
-                fontSize: "1.75rem",
-                fontWeight: 800,
-                color: "var(--accent)",
-                marginTop: "0.5rem",
-              }}
-            >
-              {run.total_websites || 0}
-            </div>
-          </div>
-          <div className="card">
-            <h4 style={{ margin: 0, opacity: 0.7, fontSize: "0.85rem" }}>
-              Run Status
-            </h4>
-            <div
-              style={{
-                fontSize: "1.25rem",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                marginTop: "0.75rem",
-                color: "var(--text-primary)",
-              }}
-            >
-              {run.status}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Tabs */}
-      <div
-        className="leads-tabs-container"
-        style={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}
-      >
-        <div className="leads-tabs">
+      {/* ----------------------------- Tabs Container----------------------------------------------------------------- */}
+      {/* Tabs moved here to be right above the table */}
+      <div className="leads-tabs-container">
+        <div className="leads-tabs-cards">
           <button
-            className={`tab-btn ${activeTab === "new" ? "active" : ""}`}
+            className={`tab-card ${activeTab === "new" ? "active" : ""}`}
             onClick={() => {
               setActiveTab("new");
               setSearchQuery("");
               setSelectedIds(new Set());
             }}
           >
-            New Leads (
-            {(run?.total_leads || 0) -
-              (run?.total_drafts || 0) -
-              (run?.total_sent || 0)}
-            )
+            <span className="tab-card-label">New Leads</span>
+            <span className="tab-card-value">
+              {(run?.total_leads || 0) -
+                (run?.total_drafts || 0) -
+                (run?.total_sent || 0)}
+            </span>
           </button>
           <button
-            className={`tab-btn ${activeTab === "drafted" ? "active" : ""}`}
+            className={`tab-card ${activeTab === "drafted" ? "active" : ""}`}
             onClick={() => {
               setActiveTab("drafted");
               setSearchQuery("");
               setSelectedIds(new Set());
             }}
           >
-            Drafted Emails ({run?.total_drafts || 0})
+            <span className="tab-card-label">Drafted Emails</span>
+            <span className="tab-card-value">{run?.total_drafts || 0}</span>
           </button>
           <button
-            className={`tab-btn ${activeTab === "sent" ? "active" : ""}`}
+            className={`tab-card ${activeTab === "sent" ? "active" : ""}`}
             onClick={() => {
               setActiveTab("sent");
               setSearchQuery("");
               setSelectedIds(new Set());
             }}
           >
-            Sent Emails ({run?.total_sent || 0})
+            <span className="tab-card-label">Sent Emails</span>
+            <span className="tab-card-value">{run?.total_sent || 0}</span>
           </button>
         </div>
-        <button className="btn btn-home-colorful" onClick={onClose}>
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-          Home
+
+        {/* ----------------------------- Home Button ----------------------------------------------------------------- */}
+        <button
+          className="export-card"
+          onClick={handleExport}
+          title="Export CSV"
+        >
+          <div className="export-card-icon">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </div>
+          <span className="export-card-label">
+            {activeTab === "new"
+              ? "New"
+              : activeTab === "drafted"
+                ? "Drafted"
+                : "Sent"}
+          </span>
         </button>
+        {/* ----------------------------- Home Button ----------------------------------------------------------------- */}
+        <button
+          className="home-card"
+          onClick={onClose}
+          title="Back to Dashboard"
+        >
+          <div className="home-card-icon">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </div>
+          <span className="home-card-label">Home</span>
+        </button>
+        {/* ----------------------------- Home Button ----------------------------------------------------------------- */}
       </div>
 
+      {/* --------------------------------- Filter Controls ------------------------------------------------------ */}
       {/* Advanced Filters */}
       <div className="filter-controls">
         {activeTab === "sent" && (
@@ -632,7 +628,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                   className="btn btn-primary btn-sm"
                   onClick={async () => {
                     if (selectedIds.size === 0) return;
-                    setSendingToSalesforce(true); // Reusing this loading state or adding a new one? Let's use it for now as it prevents other actions
+                    setSendingToSalesforce(true);
                     try {
                       const result = await api.sendBulkEmails(
                         Array.from(selectedIds),
@@ -668,18 +664,6 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
             )}
           </>
         )}
-        <button
-          className="btn btn-outline btn-sm"
-          onClick={handleExport}
-          style={{ marginLeft: selectedIds.size > 0 ? "10px" : "0" }}
-        >
-          Export CSV -{" "}
-          {activeTab === "new"
-            ? "New Leads"
-            : activeTab === "drafted"
-              ? "Drafted Emails"
-              : "Sent Emails"}
-        </button>
       </div>
 
       {drafting && (
@@ -702,14 +686,8 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                 <th className="col-business">Business Name</th>
                 <th className="col-info">Info</th>
                 <th className="col-social">Social Media</th>
-                {activeTab !== "sent" && (
-                  <>
-                    <th className="col-edit">Edit Kontakt</th>
-                    {activeTab === "drafted" && (
-                      <th className="col-edit">AI EMail</th>
-                    )}
-                  </>
-                )}
+                <th className="col-edit">Edit Kontakt</th>
+                {activeTab !== "new" && <th className="col-edit">AI EMail</th>}
                 {activeTab === "sent" ? (
                   <>
                     <th className="col-status">Delivery</th>
@@ -828,49 +806,46 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                       )}
                     </div>
                   </td>
-                  {activeTab !== "sent" && (
-                    <>
-                      <td className="col-edit">
-                        <button
-                          className="btn-edit"
-                          onClick={() => setEditingLead(lead)}
-                          title="Edit Lead"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
-                      </td>
-                      {activeTab === "drafted" && (
-                        <td className="col-edit">
-                          <button
-                            className="btn-edit"
-                            onClick={() =>
-                              lead.email_id && setSelectedEmailId(lead.email_id)
-                            }
-                            title="View Email"
-                            style={{
-                              width: "auto",
-                              padding: "0 12px",
-                              fontSize: "0.8rem",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            View E-Mail
-                          </button>
-                        </td>
-                      )}
-                    </>
+                  <td className="col-edit">
+                    <button
+                      className="btn-edit"
+                      onClick={() => setEditingLead(lead)}
+                      title="Edit Lead"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+                  </td>
+                  {activeTab !== "new" && (
+                    <td className="col-edit">
+                      <button
+                        className="btn-edit"
+                        onClick={() =>
+                          lead.email_id && setSelectedEmailId(lead.email_id)
+                        }
+                        disabled={!lead.email_id}
+                        title="View Email"
+                        style={{
+                          width: "auto",
+                          padding: "0 12px",
+                          fontSize: "0.8rem",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        View E-Mail
+                      </button>
+                    </td>
                   )}
                   {activeTab !== "sent" ? (
                     <td className="col-actions">
@@ -995,10 +970,6 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                               rel="noopener noreferrer"
                               className="btn-retry-icon"
                               title="Salesforce Lead öffnen"
-                              style={{
-                                textDecoration: "none",
-                                fontSize: "1.2rem",
-                              }}
                             >
                               🔗
                             </a>

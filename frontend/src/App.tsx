@@ -50,10 +50,14 @@ function App() {
   return (
     <div className="app">
       <div className="container">
-        <header className="header">
-          <h1 className="text-gradient">LeadGen Pipeline</h1>
-          <p>Agentic lead generation & enrichment with intelligent outreach</p>
-        </header>
+        {!selectedRunId && (
+          <header className="header">
+            <h1 className="text-gradient">LeadGen Pipeline</h1>
+            <p>
+              Agentic lead generation & enrichment with intelligent outreach
+            </p>
+          </header>
+        )}
         {!selectedRunId && <DashboardStatsComponent />}
 
         {!selectedRunId && allRuns.some((r) => r.is_pinned) && (
