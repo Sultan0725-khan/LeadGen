@@ -50,20 +50,11 @@ async def send_leads_to_salesforce(
                     "body": email_record.body
                 }
 
-            # Prepare data for Salesforce
-            sf_data = {
-                "FirstName": lead.business_name.split(' ')[0] if ' ' in lead.business_name else "",
-                "LastName": lead.business_name.split(' ', 1)[1] if ' ' in lead.business_name else lead.business_name,
-                "Company": lead.business_name,
-                "Website": lead.website,
-                "Email": lead.email,
-                "Phone": lead.phone,
-                "LeadSource": "Byte2Bite",
-                "Notes": lead.notes
-            }
+            # Prepare data for Salesforce using centralized mapping
+            payload = await salesforce_service.prepare_lead_payload(lead, email_record)
 
             # Upsert in Salesforce
-            sf_res = await salesforce_service.upsert_lead_by_email(sf_data, email_content=email_content)
+            sf_res = await salesforce_service.upsert_lead_by_email(payload, email_content=email_content)
 
             # Update local status to SFDX
             if not email_record:

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Lead, Email, Log
+from app.models import Lead, Email, Log, Run
 from app.models.email import EmailStatus
 from typing import Optional
 import csv
@@ -33,6 +33,7 @@ def export_run_csv(run_id: str, email_status: Optional[str] = None, db: Session 
         query = query.filter(Email.status == email_status)
 
     leads = query.all()
+    run = db.query(Run).filter(Run.id == run_id).first()
 
     # Load CSV mapping configuration
     config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "mappingCSV.yaml")
@@ -88,10 +89,16 @@ def export_run_csv(run_id: str, email_status: Optional[str] = None, db: Session 
                 value = email_record.subject if email_record else ""
             elif field == "email_body":
                 value = email_record.body if email_record else ""
+            elif field == "notes":
+                value = lead.notes or ""
+            elif field == "category":
+                value = run.category if run else ""
             elif field == "sfdc_id":
                 value = lead.sfdc_id or ""
             elif field == "sfdc_status":
                 value = lead.sfdc_status or ""
+            elif field == "sfdc_error":
+                value = lead.sfdc_error or ""
             elif field == "sent_at":
                 value = email_record.sent_at.isoformat() if email_record and email_record.sent_at else ""
             elif field == "email_generated_at":

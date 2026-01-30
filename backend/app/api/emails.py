@@ -101,19 +101,10 @@ async def send_bulk_emails(request: SendLeadsRequest, db: Session = Depends(get_
 
             # Chain Salesforce Integration
             try:
-                print(f"Syncing lead {lead_id} to Salesforce after email send")
-                sf_lead_data = {
-                    "FirstName": lead.business_name.split(' ')[0] if ' ' in lead.business_name else "",
-                    "LastName": lead.business_name.split(' ', 1)[1] if ' ' in lead.business_name else lead.business_name,
-                    "Company": lead.business_name,
-                    "Website": lead.website,
-                    "Email": lead.email,
-                    "Phone": lead.phone,
-                    "LeadSource": "Byte2Bite",
-                    "Notes": lead.notes
-                }
+                # Prepare data for Salesforce using centralized mapping
+                payload = await salesforce_service.prepare_lead_payload(lead, email)
                 email_content = {"subject": email.subject, "body": email.body}
-                sf_result = await salesforce_service.upsert_lead_by_email(sf_lead_data, email_content)
+                sf_result = await salesforce_service.upsert_lead_by_email(payload, email_content)
 
                 lead.sfdc_status = "success"
                 lead.sfdc_id = sf_result.get("id")
@@ -166,19 +157,10 @@ async def send_specific_email(email_id: str, db: Session = Depends(get_db)):
 
         # Chain Salesforce Integration
         try:
-            print(f"Starting Salesforce sync for lead {lead.id} ({lead.business_name})...")
-            sf_lead_data = {
-                "FirstName": lead.business_name.split(' ')[0] if ' ' in lead.business_name else "",
-                "LastName": lead.business_name.split(' ', 1)[1] if ' ' in lead.business_name else lead.business_name,
-                "Company": lead.business_name,
-                "Website": lead.website,
-                "Email": lead.email,
-                "Phone": lead.phone,
-                "LeadSource": "Byte2Bite",
-                "Notes": lead.notes
-            }
+            # Prepare data for Salesforce using centralized mapping
+            payload = await salesforce_service.prepare_lead_payload(lead, email)
             email_content = {"subject": email.subject, "body": email.body}
-            sf_result = await salesforce_service.upsert_lead_by_email(sf_lead_data, email_content)
+            sf_result = await salesforce_service.upsert_lead_by_email(payload, email_content)
 
             lead.sfdc_status = "success"
             lead.sfdc_id = sf_result.get("id")

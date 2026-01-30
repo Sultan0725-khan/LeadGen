@@ -125,33 +125,107 @@ class SalesforceService:
             logger.error(f"Failed to attach email to Lead {lead_id}: {str(e)}")
             return None
 
-    async def upsert_lead_by_email(self, lead_data: Dict[str, Any], email_content: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-        """
-        Upsert a lead by looking up the email first.
-        If lead exists, update it. Otherwise create it.
-        If email_content is provided, attach it as a file.
-        """
-        email = lead_data.get("Email")
-        if not email:
-            raise ValueError("Email is required for Salesforce lead upsert")
-
-        # Query for existing lead
-        q = f"SELECT Id FROM Lead WHERE Email = '{email}' LIMIT 1"
-        query_path = f"query?q={q}"
-        query_res = await self._request("GET", query_path)
-
-        records = query_res.get("records", [])
-
-        payload = {
-            "FirstName": lead_data.get("FirstName"),
-            "LastName": lead_data.get("LastName") or "LeadGen",
-            "Company": lead_data.get("Company") or "Individual",
-            "Email": lead_data.get("Email"),
-            "Website": lead_data.get("Website"),
-            "Phone": lead_data.get("Phone"),
-            "LeadSource": lead_data.get("LeadSource", "Byte2Bite"),
-            "Description": lead_data.get("Notes")
+    def _parse_address(self, lead: Any) -> Dict[str, str]:
+        """Extract granular address parts (Street, City, Zip) from lead data."""
+        addr_data = {
+            "Street": lead.address or "",
+            "City": "",
+            "PostalCode": "",
+            "Country": "Germany", # Default for LeadGen context
+            "State": ""
         }
+
+        # 1. Check for structured OSM data in enrichment_data
+        tags = lead.enrichment_data.get("tags", {}) if lead.enrichment_data else {}
+        if tags:
+            street = tags.get("addr:street", "")
+            hnr = tags.get("addr:housenumber", "")
+            if street:
+                addr_data["Street"] = f"{street} {hnr}".strip()
+            if "addr:city" in tags:
+                addr_data["City"] = tags["addr:city"]
+            if "addr:postcode" in tags:
+                addr_data["PostalCode"] = tags["addr:postcode"]
+            if "addr:country" in tags:
+                addr_data["Country"] = tags["addr:country"]
+            if "addr:state" in tags:
+                addr_data["State"] = tags["addr:state"]
+
+            # If we got city and zip from tags, we are done
+            if addr_data["City"] and addr_data["PostalCode"]:
+                return addr_data
+
+        # 2. Fallback: Parse the formatted address string
+        # Expected format: "Street Housenumber, Zip City" or "Street, City, Zip"
+        if lead.address and (not addr_data["City"] or not addr_data["PostalCode"]):
+            parts = [p.strip() for p in lead.address.split(",")]
+
+            if len(parts) >= 3:
+                # "Street Hnr, City, Zip" or "Name, Street, City Zip"
+                addr_data["Street"] = parts[0]
+                addr_data["City"] = parts[1]
+                addr_data["PostalCode"] = parts[2]
+            elif len(parts) == 2:
+                # "Street Hnr, Zip City"
+                addr_data["Street"] = parts[0]
+                second_part = parts[1]
+                # Split Zip and City (German style: 10625 Berlin)
+                subparts = second_part.split(" ", 1)
+                if len(subparts) == 2 and subparts[0].isdigit():
+                    addr_data["PostalCode"] = subparts[0]
+                    addr_data["City"] = subparts[1]
+                else:
+                    addr_data["City"] = second_part
+
+        return addr_data
+
+    async def prepare_lead_payload(self, lead: Any, email_record: Any = None) -> Dict:
+        """Centralized mapping from Lead/Email models to Salesforce Lead fields."""
+        social_links = lead.enrichment_data.get("social_links", {}) if lead.enrichment_data else {}
+        addr_data = self._parse_address(lead)
+
+        return {
+            "FirstName": lead.first_name or "",
+            "LastName": lead.last_name or lead.business_name,
+            "Company": lead.business_name,
+            "Street": addr_data["Street"],
+            "City": addr_data["City"],
+            "PostalCode": addr_data["PostalCode"],
+            "Country": addr_data["Country"],
+            "State": addr_data["State"],
+            "Email": lead.email,
+            "Website": lead.website,
+            "Phone": lead.phone,
+            "LeadSource": ", ".join(lead.sources) if lead.sources else "Byte2Bite",
+            "B2B_TF_NotesInLeadGen__c": lead.notes,
+            "B2B_URL_Instagram__c": social_links.get("instagram"),
+            "B2B_URL_TikTok__c": social_links.get("tiktok"),
+            "B2B_URL_Facebook__c": social_links.get("facebook"),
+            "B2B_URL_LinkedIn__c": social_links.get("linkedin"),
+            "B2B_URL_Twitter__c": social_links.get("twitter"),
+            "B2B_NF_ConfidenceScore__c": lead.confidence_score,
+            "B2B_TF_EmailStatus__c": email_record.status.value if email_record else "none",
+            "B2B_TF_EmailError__c": email_record.error_message if email_record else None,
+            "B2B_DT_EmailDraftedDate__c": email_record.generated_at.isoformat() if email_record and email_record.generated_at else None,
+            "B2B_DT_EmailSentDate__c": email_record.sent_at.isoformat() if email_record and email_record.sent_at else None,
+        }
+
+    async def upsert_lead_by_email(self, payload: Dict, email_content: Optional[Dict] = None) -> Dict:
+        """
+        Upsert a lead in Salesforce by email and optionally attach an email body as a File.
+
+        Args:
+            payload: The Salesforce Lead payload (already mapped)
+            email_content: Optional dict with 'subject' and 'body' to attach as a File (ContentVersion)
+        """
+        email = payload.get("Email")
+        if not email:
+            raise ValueError("Email is required for Salesforce upsert")
+
+        # Check for existing lead
+        query = f"SELECT Id FROM Lead WHERE Email = '{email}' LIMIT 1"
+        res = await self._request("GET", f"query?q={query}")
+        records = res.get("records", [])
 
         if records:
             lead_id = records[0]["Id"]

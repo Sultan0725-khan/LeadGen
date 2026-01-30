@@ -703,9 +703,12 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                 <th className="col-info">Info</th>
                 <th className="col-social">Social Media</th>
                 {activeTab !== "sent" && (
-                  <th className="col-edit">
-                    {activeTab === "new" ? "Edit Kontakt" : "AI EMail"}
-                  </th>
+                  <>
+                    <th className="col-edit">Edit Kontakt</th>
+                    {activeTab === "drafted" && (
+                      <th className="col-edit">AI EMail</th>
+                    )}
+                  </>
                 )}
                 {activeTab === "sent" ? (
                   <>
@@ -826,8 +829,8 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                     </div>
                   </td>
                   {activeTab !== "sent" && (
-                    <td className="col-edit">
-                      {activeTab === "new" ? (
+                    <>
+                      <td className="col-edit">
                         <button
                           className="btn-edit"
                           onClick={() => setEditingLead(lead)}
@@ -847,24 +850,27 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                           </svg>
                         </button>
-                      ) : (
-                        <button
-                          className="btn-edit"
-                          onClick={() =>
-                            lead.email_id && setSelectedEmailId(lead.email_id)
-                          }
-                          title="View Email"
-                          style={{
-                            width: "auto",
-                            padding: "0 12px",
-                            fontSize: "0.8rem",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          View E-Mail
-                        </button>
+                      </td>
+                      {activeTab === "drafted" && (
+                        <td className="col-edit">
+                          <button
+                            className="btn-edit"
+                            onClick={() =>
+                              lead.email_id && setSelectedEmailId(lead.email_id)
+                            }
+                            title="View Email"
+                            style={{
+                              width: "auto",
+                              padding: "0 12px",
+                              fontSize: "0.8rem",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            View E-Mail
+                          </button>
+                        </td>
                       )}
-                    </td>
+                    </>
                   )}
                   {activeTab !== "sent" ? (
                     <td className="col-actions">

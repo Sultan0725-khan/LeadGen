@@ -6,32 +6,38 @@
 tabs:
   new:
     "Business Name": business_name
+    "Category": category
     "Address": address
     "Phone": phone
     "Email": email
+    "Notes": notes
     "Website": website
     "Instagram": instagram
     "TikTok": tiktok
     "Facebook": facebook
     "LinkedIn": linkedin
     "Twitter": twitter
+    "Lead Source": sources
     "Confidence Score": confidence_score
-    "Email Status": email_status
-    "Sources": sources
+    # "Email Status": email_status
 
   drafted:
     "Business Name": business_name
+    "Category": category
     "First Name": first_name
     "Last Name": last_name
     "Address": address
     "Phone": phone
     "Email": email
+    "Notes": notes
     "Website": website
     "Instagram": instagram
     "TikTok": tiktok
     "Facebook": facebook
     "LinkedIn": linkedin
     "Twitter": twitter
+    "Lead Source": sources
+    "Confidence Score": confidence_score
     "Created": email_generated_at
     "Email Subject": email_subject
     "Email Body": email_body
@@ -39,17 +45,21 @@ tabs:
 
   sent:
     "Business Name": business_name
+    "Category": category
     "First Name": first_name
     "Last Name": last_name
     "Address": address
     "Phone": phone
     "Email": email
+    "Notes": notes
     "Website": website
     "Instagram": instagram
     "TikTok": tiktok
     "Facebook": facebook
     "LinkedIn": linkedin
     "Twitter": twitter
+    "Lead Source": sources
+    "Confidence Score": confidence_score
     "Email Subject": email_subject
     "Email Body": email_body
     "Email Status": email_status
@@ -59,20 +69,3 @@ tabs:
     "SFDC Status": sfdc_status
     "SFDC Error": sfdc_error
     "SFDC ID": sfdc_id
-
-# default:
-#   "Business Name": business_name
-#   "First Name": first_name
-#   "Last Name": last_name
-#   "Email": email
-#   "Website": website
-#   "Facebook": facebook
-#   "Twitter": twitter
-#   "LinkedIn": linkedin
-#   "Instagram": instagram
-#   "Address": address
-#   "Phone": phone
-#   "Confidence Score": confidence_score
-#   "Sources": sources
-#   "Email Status": email_status
-#   "Social Links": social_links
