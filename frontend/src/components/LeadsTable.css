@@ -1,3 +1,22 @@
+/* Theme Color Variables - EASY TO EDIT HERE */
+:root {
+  /* Common Base */
+  --theme-bg-base: #0f172a;
+
+  /* Theme 1: New Leads (Blues) */
+  --color-new-1: hsl(205, 61%, 26%);
+  --color-new-2: hsla(209, 57%, 29%, 0.984);
+  /* --color-new-2: hsl(190, 27%, 21%); */
+
+  /* Theme 2: Drafted (Teals/Deep Blues) */
+  --color-drafted-1: hsl(289, 24%, 22%);
+  --color-drafted-2: hsl(289, 24%, 22%);
+
+  /* Theme 3: Sent (Cyan/Dark Teal) */
+  --color-sent-1: rgba(41, 97, 75, 0.999);
+  --color-sent-2: hsl(151, 55%, 21%);
+}
+
 /* Global Background & Atmosphere */
 .app,
 .container,
@@ -12,27 +31,45 @@ body {
 }
 
 body.theme-new {
-  background: radial-gradient(
-    circle at top right,
-    hsl(215, 18%, 25%),
-    #0f172a 80%
-  ) !important;
+  background:
+    radial-gradient(
+      circle at bottom right,
+      var(--color-new-1),
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at top left,
+      var(--color-new-2),
+      var(--theme-bg-base) 45%
+    ) !important;
 }
 
 body.theme-drafted {
-  background: radial-gradient(
-    circle at top right,
-    hsl(205, 20%, 30%),
-    #0f172a 80%
-  ) !important;
+  background:
+    radial-gradient(
+      circle at bottom right,
+      var(--color-drafted-1),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at top left,
+      var(--color-drafted-1),
+      var(--theme-bg-base) 45%
+    ) !important;
 }
 
 body.theme-sent {
-  background: radial-gradient(
-    circle at top right,
-    hsl(190, 25%, 35%),
-    #0f172a 80%
-  ) !important;
+  background:
+    radial-gradient(
+      circle at bottom right,
+      var(--color-sent-2),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at top left,
+      var(--color-sent-1),
+      var(--theme-bg-base) 30%
+    ) !important;
 }
 
 .leads-table {
@@ -705,7 +742,7 @@ body.theme-sent {
   font-weight: 500;
 }
 
-/* Social Media Icons */
+/* Run Specific Header Stats */
 .social-links {
   display: flex;
   flex-wrap: wrap;
