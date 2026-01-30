@@ -701,9 +701,11 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                 </th>
                 <th className="col-business">Business Name</th>
                 <th className="col-info">Info</th>
-                <th className="col-social">Social Media</th>
-                <th className="col-edit">Edit Kontakt</th>
-                {activeTab !== "new" && <th className="col-edit">AI EMail</th>}
+                <th className="col-social">Social</th>
+                <th className="col-edit">Edit</th>
+                {activeTab !== "new" && (
+                  <th className="col-ai-email">AI Email</th>
+                )}
                 {activeTab === "sent" ? (
                   <>
                     <th className="col-status">Delivery</th>
@@ -844,7 +846,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                     </button>
                   </td>
                   {activeTab !== "new" && (
-                    <td className="col-edit">
+                    <td className="col-ai-email">
                       <button
                         className="btn-edit"
                         onClick={() =>

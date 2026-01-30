@@ -375,7 +375,7 @@ body.theme-sent {
 .table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .table tr:hover {
@@ -389,9 +389,11 @@ body.theme-sent {
   text-overflow: ellipsis;
 }
 
-/* Widened Column Utility Classes */
+/* --- Widened Column Design System --- */
+
+/* Base Styles (Shared) */
 .col-rank {
-  width: 80px;
+  width: 60px;
   text-align: center;
 }
 
@@ -401,26 +403,89 @@ body.theme-sent {
 }
 
 .col-info {
-  width: 30%;
-  min-width: 250px;
+  width: 25%;
+  min-width: 220px;
 }
 
 .col-social {
-  width: 180px;
+  width: 100px;
 }
 
-.col-edit {
-  width: 170px;
+.col-edit,
+.col-ai-email {
   text-align: center;
+  width: 80px;
 }
+
 .col-status,
-.col-actions {
-  width: 120px;
-  text-align: left;
-}
+.col-actions,
 .col-status-sf {
-  width: 100px;
   text-align: left;
+  width: 120px;
+}
+
+/* Tab-Specific Overrides (Optimization) */
+
+/********************************* New Tab: 6 Columns **********************************/
+.theme-new .col-business {
+  width: 25%;
+}
+.theme-new .col-info {
+  width: 31%;
+}
+.theme-new .col-social {
+  width: 13%;
+}
+.theme-new .col-edit {
+  width: 12%;
+}
+.theme-new .col-actions {
+  width: 15%;
+}
+
+/* Drafted Tab: 7 Columns */
+.theme-drafted .col-business {
+  width: 25%;
+}
+.theme-drafted .col-info {
+  width: 28%;
+}
+.theme-drafted .col-social {
+  width: 12%;
+}
+.theme-drafted .col-edit {
+  width: 8%;
+}
+.theme-drafted .col-ai-email {
+  width: 12%;
+}
+.theme-drafted .col-actions {
+  width: 11%;
+}
+
+/********************************* Sent Tab: 8 Columns **********************************/
+.theme-sent .col-business {
+  width: 25%;
+}
+.theme-sent .col-info {
+  width: 26%;
+}
+.theme-sent .col-social {
+  width: 8%;
+}
+.theme-sent .col-edit {
+  width: 6%;
+}
+.theme-sent .col-ai-email {
+  width: 10%;
+}
+/* Delivery */
+.theme-sent .col-status {
+  width: 9%;
+}
+/* Salesforce */
+.theme-sent .col-status-sf {
+  width: 12%;
 }
 
 .status-group {
