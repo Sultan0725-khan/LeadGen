@@ -20,6 +20,7 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   padding: var(--spacing-lg);
+  padding-bottom: calc(var(--spacing-lg) * 1.5);
   position: relative;
   animation: modalAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -51,12 +52,32 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .timestamp-text {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.4);
   font-weight: 500;
-  margin-top: 4px;
-  display: block;
+  white-space: nowrap;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lang-toggle-modal {
+  display: flex;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .close-btn {
@@ -132,15 +153,17 @@
 
 .redraft-container {
   margin-top: 24px;
-  padding: 16px;
-  background: rgba(110, 64, 201, 0.05);
-  border: 1px dashed var(--accent-primary);
-  border-radius: 8px;
+  padding: 0;
+  background: none;
+  border: none;
 }
 
 .redraft-container label {
-  color: var(--accent-primary) !important;
-  font-weight: 700;
+  color: var(--text-secondary) !important;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  display: block;
 }
 
 .redraft-input-group {

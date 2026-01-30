@@ -41,6 +41,9 @@ def update_email(email_id: str, request: EmailUpdateRequest, db: Session = Depen
         if lead:
             lead.email = request.recipient_email
 
+    if request.language:
+        email.language = request.language
+
     db.commit()
     db.refresh(email)
 

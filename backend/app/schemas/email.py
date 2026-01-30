@@ -32,6 +32,7 @@ class EmailUpdateRequest(BaseModel):
     subject: str
     body: str
     recipient_email: Optional[str] = None
+    language: Optional[str] = None
 
 
 class EmailRedraftRequest(BaseModel):

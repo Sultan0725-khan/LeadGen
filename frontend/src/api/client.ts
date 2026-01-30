@@ -181,7 +181,12 @@ export const api = {
 
   async updateEmail(
     emailId: string,
-    data: { subject: string; body: string; recipient_email?: string },
+    data: {
+      subject: string;
+      body: string;
+      recipient_email?: string;
+      language?: string;
+    },
   ): Promise<Email> {
     const response = await fetch(`${API_BASE_URL}/emails/${emailId}`, {
       method: "PUT",

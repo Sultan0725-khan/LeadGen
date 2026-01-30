@@ -333,6 +333,57 @@ body.theme-sent {
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
 }
 
+/* Compact Header Language Toggle */
+.lang-toggle-compact {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lang-btn-xs {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lang-btn-xs.active {
+  background: var(--primary-start);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Modal Square Toggle */
+.lang-btn-sq {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lang-btn-sq.active {
+  background: #5b21b6; /* Darker purple (stone-900 like) */
+  border-color: #7c3aed;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+}
+
 .leads-actions {
   display: flex;
   gap: var(--spacing-sm);
@@ -1026,21 +1077,21 @@ body.theme-sent {
 /* Toast Notification */
 .toast-notification {
   position: fixed;
-  bottom: 30px;
+  top: 30px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-card);
-  border: 1px solid #ef4444;
-  color: #f87171;
+  background: #fffbeb; /* Amber background */
+  border: 1px solid #f59e0b;
+  color: #92400e;
   padding: 12px 24px;
-  border-radius: 30px;
+  border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-  z-index: 2000;
+  z-index: 9999;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 600;
-  animation: toastFadeIn 0.3s ease;
+  gap: 12px;
+  font-weight: 700;
+  animation: toastFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .toast-icon {

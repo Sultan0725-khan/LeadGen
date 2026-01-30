@@ -78,6 +78,7 @@ export function EmailDraftModal({
         subject: email.subject,
         body: email.body,
         recipient_email: email.recipient_email,
+        language: email.language,
       });
       setPersistedEmail(email);
       if (onUpdate) onUpdate();
@@ -157,17 +158,17 @@ export function EmailDraftModal({
     <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-content email-modal">
         <div className="modal-header">
-          <div>
-            <h2 className="text-gradient">Edit Email Draft</h2>
+          <h2 className="text-gradient">Edit Email Draft</h2>
+          <div className="header-right">
             {email?.generated_at && (
               <span className="timestamp-text">
                 Created: {formatDate(email.generated_at)}
               </span>
             )}
+            <button className="close-btn" onClick={onClose}>
+              &times;
+            </button>
           </div>
-          <button className="close-btn" onClick={onClose}>
-            &times;
-          </button>
         </div>
 
         {redrafting && (
@@ -246,13 +247,39 @@ export function EmailDraftModal({
         </div>
 
         <div className="modal-footer">
-          <button
-            className="btn btn-outline"
-            onClick={onClose}
-            disabled={saving || sending || redrafting}
-          >
-            Cancel
-          </button>
+          <div className="footer-left">
+            <button
+              className="btn btn-outline"
+              onClick={onClose}
+              disabled={saving || sending || redrafting}
+            >
+              Cancel
+            </button>
+            <div className="lang-toggle-modal">
+              <button
+                className={`lang-btn-sq ${email?.language === "DE" ? "active" : ""}`}
+                onClick={() =>
+                  setEmail((prev) =>
+                    prev ? { ...prev, language: "DE" } : null,
+                  )
+                }
+                disabled={saving || sending || redrafting}
+              >
+                DE
+              </button>
+              <button
+                className={`lang-btn-sq ${email?.language === "EN" ? "active" : ""}`}
+                onClick={() =>
+                  setEmail((prev) =>
+                    prev ? { ...prev, language: "EN" } : null,
+                  )
+                }
+                disabled={saving || sending || redrafting}
+              >
+                EN
+              </button>
+            </div>
+          </div>
           <div className="footer-actions">
             <button
               className="btn btn-outline"

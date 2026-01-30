@@ -330,17 +330,48 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   };
 
   const handleDraftSelected = async () => {
-    if (selectedIds.size === 0) {
-      showToast("Please select at least one checkbox or lead");
+    // Only process leads with email addresses
+    const selectableLeads = leads.filter((l) => selectedIds.has(l.id));
+    const leadsWithEmail = selectableLeads.filter((l) => l.email);
+
+    if (leadsWithEmail.length === 0) {
+      if (selectableLeads.length > 0) {
+        showToast("Keiner der gewählten Leads hat eine E-Mail Adresse.");
+      } else {
+        showToast("Please select at least one lead");
+      }
       return;
     }
+
+    if (leadsWithEmail.length < selectableLeads.length) {
+      const skippedLeads = selectableLeads.filter((l) => !l.email);
+      const skippedNames = skippedLeads
+        .slice(0, 5)
+        .map((l) => l.business_name)
+        .join(", ");
+      const moreText = skippedLeads.length > 5 ? "..." : "";
+
+      if (
+        !confirm(
+          `${skippedLeads.length} Leads haben keine E-Mail Adresse (${skippedNames}${moreText}) und werden übersprungen. Fortfahren?`,
+        )
+      ) {
+        return;
+      }
+    }
+
     setDrafting(true);
     try {
-      await api.draftEmails(Array.from(selectedIds), draftLanguage);
-      await loadLeads();
+      await api.draftEmails(
+        leadsWithEmail.map((l) => l.id),
+        draftLanguage,
+      );
+      showToast(`${leadsWithEmail.length} Drafts angestoßen.`);
+      await loadLeads(false);
       setSelectedIds(new Set());
     } catch (error) {
       console.error("Failed to draft emails:", error);
+      showToast("Draft error - check terminal");
     } finally {
       setDrafting(false);
     }
@@ -566,42 +597,34 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
           </button>
         )}
 
-        <label className="filter-group">
-          <input
-            type="checkbox"
-            checked={filterHasEmail === true}
-            onChange={(e) => setFilterHasEmail(e.target.checked ? true : null)}
-            className="checkbox-custom"
-          />
-          <span>Has Email</span>
-        </label>
-        <label className="filter-group">
-          <input
-            type="checkbox"
-            checked={filterHasWebsite === true}
-            onChange={(e) =>
-              setFilterHasWebsite(e.target.checked ? true : null)
-            }
-            className="checkbox-custom"
-          />
-          <span>Has Website</span>
-        </label>
+        {activeTab === "new" && (
+          <>
+            <label className="filter-group">
+              <input
+                type="checkbox"
+                checked={filterHasEmail === true}
+                onChange={(e) =>
+                  setFilterHasEmail(e.target.checked ? true : null)
+                }
+                className="checkbox-custom"
+              />
+              <span>Has Email</span>
+            </label>
+            <label className="filter-group">
+              <input
+                type="checkbox"
+                checked={filterHasWebsite === true}
+                onChange={(e) =>
+                  setFilterHasWebsite(e.target.checked ? true : null)
+                }
+                className="checkbox-custom"
+              />
+              <span>Has Website</span>
+            </label>
+          </>
+        )}
 
-        {/* Language Selection for Drafting */}
-        <div className="lang-toggle">
-          <button
-            className={`lang-btn ${draftLanguage === "DE" ? "active" : ""}`}
-            onClick={() => setDraftLanguage("DE")}
-          >
-            GER
-          </button>
-          <button
-            className={`lang-btn ${draftLanguage === "EN" ? "active" : ""}`}
-            onClick={() => setDraftLanguage("EN")}
-          >
-            EN
-          </button>
-        </div>
+        {/* Language Selection moved to AI Draft header */}
 
         <div className="result-count">
           Showing {leads.length} {leads.length === 1 ? "Lead" : "Leads"}
@@ -713,7 +736,36 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                   </>
                 ) : (
                   <th className="col-actions">
-                    {activeTab === "new" ? "AI Draft" : "📧 ☑️ ⇢ ☁️ ☑️"}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <span>
+                        {activeTab === "new" ? "AI Draft" : "📧 ☑️ ⇢ ☁️ ☑️"}
+                      </span>
+                      {activeTab === "new" && (
+                        <div className="lang-toggle-compact">
+                          <button
+                            className={`lang-btn-xs ${draftLanguage === "DE" ? "active" : ""}`}
+                            onClick={() => setDraftLanguage("DE")}
+                            title="German"
+                          >
+                            DE
+                          </button>
+                          <button
+                            className={`lang-btn-xs ${draftLanguage === "EN" ? "active" : ""}`}
+                            onClick={() => setDraftLanguage("EN")}
+                            title="English"
+                          >
+                            EN
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </th>
                 )}
               </tr>
@@ -871,6 +923,12 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                         className="btn btn-primary btn-small"
                         onClick={async () => {
                           if (activeTab === "new") {
+                            if (!lead.email) {
+                              showToast(
+                                "Lead hat keine E-Mail Adresse. Draft nicht möglich!",
+                              );
+                              return;
+                            }
                             setDrafting(true); // Trigger big llama loader
                             try {
                               await api.draftEmails([lead.id], draftLanguage);
