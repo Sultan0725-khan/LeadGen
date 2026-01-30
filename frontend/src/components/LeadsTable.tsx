@@ -187,6 +187,22 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
     visible: false,
   });
   const perPage = 100;
+  useEffect(() => {
+    // Apply theme class to body for global background transition
+    document.body.classList.add(`theme-${activeTab}`);
+
+    // Cleanup other theme classes when switching or unmounting
+    const themes = ["theme-new", "theme-drafted", "theme-sent"];
+    themes.forEach((t) => {
+      if (t !== `theme-${activeTab}`) {
+        document.body.classList.remove(t);
+      }
+    });
+
+    return () => {
+      document.body.classList.remove(`theme-${activeTab}`);
+    };
+  }, [activeTab]);
 
   const loadLeads = useCallback(
     async (showLoading = true) => {
@@ -381,7 +397,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
   }
 
   return (
-    <div className={`card leads-table theme-${activeTab}`}>
+    <div className="card leads-table">
       <div className="leads-header-mini">
         <h2 className="text-gradient">Leads ({run?.total_leads || 0})</h2>
         {run && (
