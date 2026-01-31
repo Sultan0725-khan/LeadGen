@@ -10,8 +10,6 @@ interface RunFormProps {
 export function RunForm({ onRunCreated }: RunFormProps) {
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("");
-  const [requireApproval, setRequireApproval] = useState(true);
-  const [dryRun, setDryRun] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -81,8 +79,8 @@ export function RunForm({ onRunCreated }: RunFormProps) {
       const data: CreateRunRequest = {
         location,
         category,
-        require_approval: requireApproval,
-        dry_run: dryRun,
+        require_approval: true,
+        dry_run: true,
         providers: selectedProviders.length > 0 ? selectedProviders : undefined,
         provider_limits: providerLimits,
       };
@@ -266,26 +264,6 @@ export function RunForm({ onRunCreated }: RunFormProps) {
             </div>
           )}
           <small>Choose which sources to query for lead data</small>
-        </div>
-
-        <div className="form-checkboxes">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={requireApproval}
-              onChange={(e) => setRequireApproval(e.target.checked)}
-            />
-            <span>Require manual approval before sending emails</span>
-          </label>
-
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={dryRun}
-              onChange={(e) => setDryRun(e.target.checked)}
-            />
-            <span>Dry run (generate emails but don't send)</span>
-          </label>
         </div>
 
         <button type="submit" className="btn btn-large" disabled={loading}>
