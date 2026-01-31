@@ -37,16 +37,19 @@ class AgentOrchestrator:
             # Update status to running
             run.status = RunStatus.RUNNING
             self.db.commit()
+            print(f"[Orchestrator] Run {run_id} status updated to RUNNING")
             self._log(run, LogLevel.INFO, "Run started")
 
             # Step 1: Collect leads from providers
             self._log(run, LogLevel.INFO, f"Collecting leads for {run.category} in {run.location}")
+            print(f"[Orchestrator] Calling lead_collector.collect for {run.location} / {run.category}")
             raw_leads, usage_info = await self.lead_collector.collect(
                 run.location,
                 run.category,
                 selected_providers=run.selected_providers,
                 provider_limits=run.provider_limits
             )
+            print(f"[Orchestrator] Collected {len(raw_leads)} raw leads from collector")
             self._log(run, LogLevel.INFO, f"Collected {len(raw_leads)} raw leads")
 
             # Record credit usage in database
@@ -56,7 +59,9 @@ class AgentOrchestrator:
 
             # Step 2: Normalize and deduplicate
             self._log(run, LogLevel.INFO, "Normalizing and deduplicating leads")
+            print("[Orchestrator] Starting normalization...")
             normalized_leads = self.normalizer.normalize_and_dedupe(raw_leads)
+            print(f"[Orchestrator] Normalized to {len(normalized_leads)} unique leads")
             self._log(run, LogLevel.INFO, f"Normalized to {len(normalized_leads)} unique leads")
 
             # Step 3: Enrich leads (in parallel batches)

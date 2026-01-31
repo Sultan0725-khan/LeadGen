@@ -12,6 +12,7 @@ class JobQueue:
     def __init__(self):
         # Use thread-safe queue instead of asyncio.Queue
         self._queue = queue.Queue()
+        print("[JobQueue] Initialized internal queue")
         self._worker_thread = None
 
     def start_worker(self):
@@ -40,11 +41,12 @@ class JobQueue:
         from app.agents.orchestrator import AgentOrchestrator
 
         while True:
-            # Get job from thread-safe queue (blocking)
             try:
+                # print("[JobQueue] Worker waiting for job...")
                 run_id = self._queue.get(timeout=1)
+                print(f"[JobQueue] Worker got job: {run_id}")
             except queue.Empty:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.5)
                 continue
 
             try:
@@ -63,6 +65,7 @@ class JobQueue:
 
     def enqueue(self, run_id: str):
         """Add a run to the queue (synchronous)."""
+        print(f"[JobQueue] Enqueuing run_id: {run_id}")
         self._queue.put(run_id)
         print(f"Enqueued run {run_id}")
 

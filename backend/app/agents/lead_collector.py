@@ -58,7 +58,9 @@ class LeadCollector:
 
         for provider, result in zip(providers, results):
             if isinstance(result, Exception):
-                print(f"Error from {provider.name}: {result}")
+                print(f"[LeadCollector] ERROR from {provider.name}: {result}")
+                import traceback
+                traceback.print_exc()
                 continue
 
             # Unpack search result and credits
@@ -103,7 +105,7 @@ class LeadCollector:
             # Geoapify charges per limit/returned results.
             credits = provider.calculate_credits(limit=actual_limit, count=len(leads))
 
-            print(f"{provider.name}: found {len(leads)} leads, cost {credits} credits")
+            print(f"[LeadCollector] {provider.name}: found {len(leads)} leads, cost {credits} credits")
             return leads, credits
         except Exception as e:
             print(f"{provider.name}: ERROR - {e}")
