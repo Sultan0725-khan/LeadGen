@@ -166,14 +166,21 @@ body.theme-sent {
 }
 
 .tab-card.active {
-  background: linear-gradient(
-    135deg,
-    rgba(99, 102, 241, 0.1),
-    rgba(168, 85, 247, 0.1)
-  );
-  border-color: rgba(99, 102, 241, 0.4);
   color: #fff;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tab-card.tab-new.active {
+  background: hsl(205, 61%, 26%) !important;
+}
+
+.tab-card.tab-drafted.active {
+  background: hsl(289, 24%, 22%) !important;
+}
+
+.tab-card.tab-sent.active {
+  background: rgba(41, 97, 75, 0.999) !important;
 }
 
 .tab-card-label {
@@ -189,10 +196,9 @@ body.theme-sent {
 }
 
 .tab-card.active .tab-card-value {
-  background: linear-gradient(135deg, #6366f1, #a855f7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  background: none !important;
 }
 
 .leads-tabs-container {
@@ -283,14 +289,46 @@ body.theme-sent {
   gap: 0.5rem;
   font-size: 0.9rem;
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.main-actions-bar {
+.filter-spacer {
+  flex-grow: 1;
+}
+
+.checkbox-filters {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.bulk-actions-group {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding: 0 1rem;
+  padding-left: 1.5rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  margin-left: 0.5rem;
+}
+
+.bulk-btns-multi {
+  display: flex;
+  gap: 20px;
+}
+
+.selected-count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #a855f7;
+  white-space: nowrap;
+}
+
+.btn-sf {
+  background-color: #00a1e0 !important;
+}
+
+.btn-send {
+  background-color: #22c55e !important;
 }
 
 .btn-icon {
@@ -306,12 +344,6 @@ body.theme-sent {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
   transform: translateY(-2px);
-}
-
-.result-count {
-  margin-left: auto;
-  font-weight: 700;
-  color: var(--primary-start);
 }
 
 .lang-toggle {

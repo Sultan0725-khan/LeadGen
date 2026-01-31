@@ -456,7 +456,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
         <div className="leads-tabs-container">
           <div className="leads-tabs-cards">
             <button
-              className={`tab-card ${activeTab === "new" ? "active" : ""}`}
+              className={`tab-card tab-new ${activeTab === "new" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("new");
                 setSearchQuery("");
@@ -471,7 +471,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
               </span>
             </button>
             <button
-              className={`tab-card ${activeTab === "drafted" ? "active" : ""}`}
+              className={`tab-card tab-drafted ${activeTab === "drafted" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("drafted");
                 setSearchQuery("");
@@ -482,7 +482,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
               <span className="tab-card-value">{run?.total_drafts || 0}</span>
             </button>
             <button
-              className={`tab-card ${activeTab === "sent" ? "active" : ""}`}
+              className={`tab-card tab-sent ${activeTab === "sent" ? "active" : ""}`}
               onClick={() => {
                 setActiveTab("sent");
                 setSearchQuery("");
@@ -555,25 +555,6 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
         {/* --------------------------------- Filter Controls ------------------------------------------------------ */}
         {/* Advanced Filters */}
         <div className="filter-controls">
-          {activeTab === "sent" && (
-            <div className="search-bar" style={{ marginRight: "1rem" }}>
-              <input
-                type="text"
-                placeholder="🔍 Search Business..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  borderRadius: "20px",
-                  padding: "6px 15px",
-                  border: "1px solid #ddd",
-                  width: "350px",
-                  fontSize: "0.85rem",
-                  outline: "none",
-                  backgroundColor: "white",
-                }}
-              />
-            </div>
-          )}
           <button
             className="btn btn-outline btn-sm"
             onClick={() => {
@@ -604,44 +585,9 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
             </button>
           )}
 
-          {activeTab === "new" && (
-            <>
-              <label className="filter-group">
-                <input
-                  type="checkbox"
-                  checked={filterHasEmail === true}
-                  onChange={(e) =>
-                    setFilterHasEmail(e.target.checked ? true : null)
-                  }
-                  className="checkbox-custom"
-                />
-                <span>Has Email</span>
-              </label>
-              <label className="filter-group">
-                <input
-                  type="checkbox"
-                  checked={filterHasWebsite === true}
-                  onChange={(e) =>
-                    setFilterHasWebsite(e.target.checked ? true : null)
-                  }
-                  className="checkbox-custom"
-                />
-                <span>Has Website</span>
-              </label>
-            </>
-          )}
-
-          {/* Language Selection moved to AI Draft header */}
-
-          <div className="result-count">
-            Showing {leads.length} {leads.length === 1 ? "Lead" : "Leads"}
-          </div>
-        </div>
-
-        {/* Main Actions Bar */}
-        <div className="main-actions-bar">
+          {/* Bulk Actions merged here */}
           {selectedIds.size > 0 && (
-            <>
+            <div className="bulk-actions-group">
               <span className="selected-count">
                 {selectedIds.size} selected
               </span>
@@ -654,26 +600,16 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                   {drafting ? "🦙..🐏..🦙..🐏" : "Draft Email"}
                 </button>
               ) : (
-                <>
+                <div className="bulk-btns-multi">
                   <button
                     className="btn btn-primary btn-sm"
                     onClick={handleDraftSelected}
                     disabled={drafting}
                   >
-                    {drafting ? "🦙..🐏..🦙..🐏" : "Re-Draft Email"}
+                    {drafting ? "🦙..🐏..🦙..🐏" : "Re-Draft"}
                   </button>
                   <button
-                    className="btn btn-primary btn-sm"
-                    onClick={handleSendToSalesforce}
-                    disabled={sendingToSalesforce}
-                    style={{ marginLeft: "10px", backgroundColor: "#00a1e0" }}
-                  >
-                    {sendingToSalesforce
-                      ? "Sending..."
-                      : "Send Lead only to SFDC"}
-                  </button>
-                  <button
-                    className="btn btn-primary btn-sm"
+                    className="btn btn-primary btn-sm btn-send"
                     onClick={async () => {
                       if (selectedIds.size === 0) return;
                       setSendingToSalesforce(true);
@@ -706,13 +642,69 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                       }
                     }}
                     disabled={sendingToSalesforce}
-                    style={{ marginLeft: "10px", backgroundColor: "#22c55e" }}
                   >
                     {sendingToSalesforce ? "Sending..." : "Send Email"}
                   </button>
-                </>
+                  <button
+                    className="btn btn-primary btn-sm btn-sf"
+                    onClick={handleSendToSalesforce}
+                    disabled={sendingToSalesforce}
+                  >
+                    {sendingToSalesforce ? "Sending..." : "Send to Salesforce"}
+                  </button>
+                </div>
               )}
-            </>
+            </div>
+          )}
+
+          {/* Spacer to push filters to the right */}
+          <div className="filter-spacer" />
+
+          {activeTab === "sent" && (
+            <div className="search-bar">
+              <input
+                type="text"
+                placeholder="🔍 Search Business..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  borderRadius: "20px",
+                  padding: "6px 15px",
+                  border: "1px solid #ddd",
+                  width: "280px",
+                  fontSize: "0.85rem",
+                  outline: "none",
+                  backgroundColor: "white",
+                }}
+              />
+            </div>
+          )}
+
+          {activeTab === "new" && (
+            <div className="checkbox-filters">
+              <label className="filter-group">
+                <input
+                  type="checkbox"
+                  checked={filterHasEmail === true}
+                  onChange={(e) =>
+                    setFilterHasEmail(e.target.checked ? true : null)
+                  }
+                  className="checkbox-custom"
+                />
+                <span>Has Email</span>
+              </label>
+              <label className="filter-group">
+                <input
+                  type="checkbox"
+                  checked={filterHasWebsite === true}
+                  onChange={(e) =>
+                    setFilterHasWebsite(e.target.checked ? true : null)
+                  }
+                  className="checkbox-custom"
+                />
+                <span>Has Website</span>
+              </label>
+            </div>
           )}
         </div>
 
@@ -743,7 +735,7 @@ export function LeadsTable({ runId, onClose }: LeadsTableProps) {
                   {activeTab === "sent" ? (
                     <>
                       <th className="col-status">Delivery</th>
-                      <th className="col-status-sf">SFDC</th>
+                      <th className="col-status-sf">Salesforce</th>
                     </>
                   ) : (
                     <th className="col-actions">

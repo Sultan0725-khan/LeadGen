@@ -72,14 +72,14 @@ def get_run_leads(
         query = query.filter(Lead.confidence_score >= min_score)
 
     if has_email is True:
-        query = query.filter(Lead.email != None)
+        query = query.filter(Lead.email != None, Lead.email != "")
     elif has_email is False:
-        query = query.filter(Lead.email == None)
+        query = query.filter((Lead.email == None) | (Lead.email == ""))
 
     if has_website is True:
-        query = query.filter(Lead.website != None)
+        query = query.filter(Lead.website != None, Lead.website != "")
     elif has_website is False:
-        query = query.filter(Lead.website == None)
+        query = query.filter((Lead.website == None) | (Lead.website == ""))
 
     # Email status filtering (server-side for proper pagination)
     if email_status == "new":
