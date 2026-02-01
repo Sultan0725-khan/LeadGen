@@ -4,6 +4,7 @@ from app.providers.osm_overpass import OSMOverpassProvider
 from app.providers.google_places import GooglePlacesProvider
 from app.providers.geoapify import GeoapifyProvider
 from app.providers.tomtom import TomTomProvider
+from app.providers.crawl4ai_provider import Crawl4AIProvider
 
 
 class ProviderRegistry:
@@ -14,6 +15,7 @@ class ProviderRegistry:
         GooglePlacesProvider,
         GeoapifyProvider,
         TomTomProvider,
+        Crawl4AIProvider,
         # Add more providers here
     ]
 
