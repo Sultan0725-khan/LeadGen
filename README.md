@@ -1,3 +1,9 @@
+# Start Project
+
+```bash
+./start-local.sh
+```
+
 # LeadGen Pipeline
 
 An intelligent, agentic lead generation and enrichment system with automated outreach capabilities.

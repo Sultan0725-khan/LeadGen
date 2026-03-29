@@ -69,8 +69,8 @@ class EmailWriter:
             # Add unsubscribe footer
             body_with_footer = self._add_unsubscribe_footer(body, language)
 
-            # Archive the email locally
-            self._archive_email(lead.get("business_name", "unknown"), subject, body_with_footer)
+            # Archive the email locally (Disabled to prevent file explosion in large runs)
+            # self._archive_email(lead.get("business_name", "unknown"), subject, body_with_footer)
 
             return {
                 "subject": subject,
