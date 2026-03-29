@@ -208,6 +208,7 @@ class SalesforceService:
             "B2B_TF_EmailError__c": email_record.error_message if email_record else None,
             "B2B_DT_EmailDraftedDate__c": email_record.generated_at.isoformat() if email_record and email_record.generated_at else None,
             "B2B_DT_EmailSentDate__c": email_record.sent_at.isoformat() if email_record and email_record.sent_at else None,
+            "B2B_TF_ColdLeadGenerator__c": True,
         }
 
     async def upsert_lead_by_email(self, payload: Dict, email_content: Optional[Dict] = None) -> Dict:

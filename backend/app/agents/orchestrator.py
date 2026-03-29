@@ -66,7 +66,7 @@ class AgentOrchestrator:
 
             # Step 3: Enrich leads (in parallel batches)
             self._log(run, LogLevel.INFO, "Enriching leads with website data")
-            await self._enrich_leads(normalized_leads)
+            await self._enrich_leads(normalized_leads, run_id)
 
             # Step 4: Calculate confidence scores
             self._log(run, LogLevel.INFO, "Calculating confidence scores")
@@ -92,7 +92,7 @@ class AgentOrchestrator:
             # Mark run as completed
             run.status = RunStatus.COMPLETED
             run.completed_at = get_german_now()
-            self._refresh_run_stats(run)
+            refresh_run_stats(run.id, self.db)
             self.db.commit()
             self._log(run, LogLevel.INFO, "Run completed successfully")
 
@@ -105,7 +105,7 @@ class AgentOrchestrator:
             self._log(run, LogLevel.ERROR, f"Run failed: {str(e)}")
             raise
 
-    async def _enrich_leads(self, leads: list):
+    async def _enrich_leads(self, leads: list, run_id: str):
         """Enrich leads in parallel batches."""
         # Process in batches of 5 to avoid overwhelming
         batch_size = 5
@@ -122,7 +122,6 @@ class AgentOrchestrator:
                     lead["enrichment_data"] = enrichment
 
         if leads:
-            run_id = leads[0]['run_id']
             self.db.query(Run).filter(Run.id == run_id).update({
                 "total_websites": self.db.query(Lead).filter(
                     Lead.run_id == run_id,
